@@ -8,7 +8,7 @@ conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hoc
 cursor = conn.cursor()
 
 list_df = tabula.read_pdf_with_template(
-    input_path='D:\\Downloads\\Hockey\\1-1.pdf',
+    input_path='D:\\Downloads\\Hockey\\1-3.pdf',
     template_path="D:\\Downloads\\Hockey\\template6.json",
     pages='all',
     
@@ -34,7 +34,7 @@ else:
 #create table
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS "{}" (
-        number INTEGER PRIMARY KEY,
+        number INTEGER,
         Team_name TEXT,       
         Goal INTEGER ,
         Assist INTEGER,
@@ -51,7 +51,7 @@ conn.commit()
 
 
 ########################################################################################################################################################
-
+''''''
 team_a_name = list_df[1].columns[1]
 print("HERE", team_a_name)
 print(pd.isna(list_df[2].iat[0, 1]))
@@ -70,7 +70,7 @@ for y in range(len(team_a_roster) ):
         cursor.execute('''
                         INSERT INTO"{}"  (number, Team_name, Goal, Assist, PIM, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
-                        ON CONFLICT (number) DO NOTHING
+                        
                     '''.format(game_no), (player,team_a_name ,player_name,position,))
         conn.commit()
         print(player, player_name,position)
@@ -93,7 +93,7 @@ for y in range(len(team_a_roster) ):
             cursor.execute('''
                         INSERT INTO "{}"  (number, Team_name, Goal, Assist, PIM, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
-                        ON CONFLICT (number) DO NOTHING
+                        
                     '''.format(game_no), (player,team_a_name ,player_name,position,))
             conn.commit()
         except Exception as e:
@@ -125,7 +125,7 @@ for y in range(len(team_b_roster) ):
         cursor.execute('''
                         INSERT INTO "{}" (number, Team_name, Goal, Assist, PIM, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
-                        ON CONFLICT (number) DO NOTHING
+                        
                     '''.format(game_no), (player,team_b_name ,player_name,position,))
         conn.commit()
         print("BREEEEEE",player, player_name,position)
@@ -142,12 +142,12 @@ for y in range(len(team_b_roster) ):
             player_name = player_name.replace("T", '').strip()
             player_name = player_name.replace("(C)", '').strip()
             player_name = player_name.replace("(A)", '').strip()
-            print("BREEEEEE",player," ", player_name,"",position)
+            print("BREEEEEE",player," ", player_name," ",position)
             cursor.execute('''
                         INSERT INTO "{}"  (number, Team_name, Goal, Assist, PIM, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
-                        ON CONFLICT (number) DO NOTHING
-                    '''.format(game_no), (player,team_b_name ,player_name,position,))
+                        
+                    '''.format(game_no), (player,team_b_name,player_name,position,))
             conn.commit()
         except Exception as e:
             print(e)
@@ -155,6 +155,8 @@ for y in range(len(team_b_roster) ):
 
 
 ########################################################################################################################################################
+#doto add where = ?    
+"""          
 for x in range(1, len(team_a_GA)):
     
     
@@ -166,7 +168,7 @@ for x in range(1, len(team_a_GA)):
         cursor.execute('''
                 INSERT INTO "{}"  (number, Team_name, Goal, Assist)
                 VALUES (?,?,0,0)
-                ON CONFLICT (number) DO NOTHING
+                WHERE 
             '''.format(game_no), (goal_person,team_a_name ,))
         cursor.execute('''
                 UPDATE "{}" 
@@ -207,7 +209,7 @@ for x in range(1, len(team_a_GA)):
 
 
 
-"""
+
 
 ##above needs to be done below for team b it seems. 
 
@@ -266,7 +268,7 @@ except:
     pass
 #GKB1
 gkb1_saves = int(list_df[13].iat[5, 2])
-gkb1_number = list_df[12].iat[0, 3]
+gkb1_number = int(list_df[12].iat[0, 3])
 gkb1_mip,y = list_df[12].iat[0, 4].split(":")
 gkb1_ga = int(list_df[12].iat[0, 5])
 gkb1_mip = int(gkb1_mip)
@@ -281,7 +283,7 @@ except:
     pass
 
 
-print(team_b_name, " ", gkb1_number)
+print(team_b_name, " ", gkb1_number, " ", gkb1_saves)
 
 
 
@@ -304,13 +306,15 @@ except Exception as e:
 try:
     cursor.execute('''
     UPDATE "{}"
-    SET saves = ?
-    WHERE number = ? AND Team_name = ? 
-'''.format(game_no), (gkb1_saves, gkb1_number,team_b_name,))
+    SET saves = ?,
+        MIP = ?,
+        GA = ?
+    WHERE number = ? 
+'''.format(game_no), (gkb1_saves, gkb1_mip, gkb1_ga, gkb1_number))
 
     conn.commit()
 except Exception as e:
-    print(e)  
+    print(e)
 
 
 
@@ -367,7 +371,21 @@ cursor.execute('''
     )
 '''.format(team_a_name))
 
-
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS "{}" (
+        team_name TEXT PRIMARY KEY,     
+        goals INTEGER ,
+        assists INTEGER,
+        pim INTEGER,
+        player_name TEXT,
+        position TEXT,
+        saves INTEGER,
+        MIP FLOAT,
+        GA INTEGER,
+        wins INTEGER, 
+        sog INTEGER      
+    )
+'''.format(team_b_name))
 
 
 """
