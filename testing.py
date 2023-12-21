@@ -8,7 +8,7 @@ conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hoc
 cursor = conn.cursor()
 
 list_df = tabula.read_pdf_with_template(
-    input_path='D:\\Downloads\\Hockey\\1-3.pdf',
+    input_path='D:\\Downloads\\Hockey\\1-2.pdf',
     template_path="D:\\Downloads\\Hockey\\template6.json",
     pages='all',
     
@@ -35,15 +35,15 @@ else:
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS "{}" (
         number INTEGER,
-        Team_name TEXT,       
+        team_name TEXT,       
         Goal INTEGER ,
         Assist INTEGER,
-        PIM INTEGER,
+        pim INTEGER,
         player_name TEXT,
         position TEXT,
         saves INTEGER,
-        MIP FLOAT,
-        GA INTEGER       
+        mip FLOAT,
+        ga INTEGER       
     )
 '''.format(game_no))
 
@@ -56,7 +56,7 @@ team_a_name = list_df[1].columns[1]
 print("HERE", team_a_name)
 print(pd.isna(list_df[2].iat[0, 1]))
 #goals and assists, drops empty rows for processing
-team_a_GA = list_df[3].dropna()
+team_a_ga = list_df[3].dropna()
 team_a_roster = list_df[2]
 #adds players on the scoresheet to the database
 for y in range(len(team_a_roster) ):
@@ -68,7 +68,7 @@ for y in range(len(team_a_roster) ):
         player, player_name = player.split(" ",1) 
         position = team_a_roster.iat[y, 2]
         cursor.execute('''
-                        INSERT INTO"{}"  (number, Team_name, Goal, Assist, PIM, player_name, position)
+                        INSERT INTO"{}"  (number, team_name, Goal, Assist, pim, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_a_name ,player_name,position,))
@@ -91,7 +91,7 @@ for y in range(len(team_a_roster) ):
             player_name = player_name.replace("(A)", '').strip()
             print("NAME A",player_name)
             cursor.execute('''
-                        INSERT INTO "{}"  (number, Team_name, Goal, Assist, PIM, player_name, position)
+                        INSERT INTO "{}"  (number, team_name, Goal, Assist, pim, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_a_name ,player_name,position,))
@@ -110,8 +110,8 @@ for y in range(len(team_a_roster) ):
 team_b_name = list_df[10].columns[1]
 print(team_b_name)
 #goals and assists, drops empty rows for processing
-team_b_GA = list_df[8].dropna()
-print("GA", team_b_GA)
+team_b_ga = list_df[8].dropna()
+print("ga", team_b_ga)
 team_b_roster = list_df[9]
 
 #adds players on the scoresheet to the database
@@ -123,7 +123,7 @@ for y in range(len(team_b_roster) ):
         player, player_name = player.split(" ",1) 
         position = team_b_roster.iat[y, 2]
         cursor.execute('''
-                        INSERT INTO "{}" (number, Team_name, Goal, Assist, PIM, player_name, position)
+                        INSERT INTO "{}" (number, team_name, Goal, Assist, pim, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_b_name ,player_name,position,))
@@ -144,7 +144,7 @@ for y in range(len(team_b_roster) ):
             player_name = player_name.replace("(A)", '').strip()
             print("BREEEEEE",player," ", player_name," ",position)
             cursor.execute('''
-                        INSERT INTO "{}"  (number, Team_name, Goal, Assist, PIM, player_name, position)
+                        INSERT INTO "{}"  (number, team_name, Goal, Assist, pim, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_b_name,player_name,position,))
@@ -156,25 +156,19 @@ for y in range(len(team_b_roster) ):
 
 ########################################################################################################################################################
 #doto add where = ?    
-"""          
-for x in range(1, len(team_a_GA)):
+print(team_a_ga.iat[1, 2])
+for x in range(1, len(team_a_ga)):
     
     
     try:
         
 
-        goal_person = team_a_GA.iat[x, 1]
-        
-        cursor.execute('''
-                INSERT INTO "{}"  (number, Team_name, Goal, Assist)
-                VALUES (?,?,0,0)
-                WHERE 
-            '''.format(game_no), (goal_person,team_a_name ,))
+    
         cursor.execute('''
                 UPDATE "{}" 
                 SET Goal = Goal + 1
-                WHERE number = ?
-            '''.format(game_no), ( goal_person,))
+                WHERE number = ? AND team_name = ?
+            '''.format(game_no), (team_a_ga.iat[x, 1],team_a_name,))
         conn.commit()
 
 
@@ -185,8 +179,8 @@ for x in range(1, len(team_a_GA)):
             cursor.execute('''
                 UPDATE "{}" 
                 SET Assist = Assist + 1
-                WHERE number = ?
-            '''.format(game_no), (team_a_GA.iat[x, 2],))
+                WHERE number = ? AND team_name = ?
+            '''.format(game_no), (team_a_ga.iat[x, 2],team_a_name,))
             conn.commit()
 
             
@@ -194,8 +188,8 @@ for x in range(1, len(team_a_GA)):
             cursor.execute('''
                 UPDATE "{}" 
                 SET Assist = Assist + 1
-                WHERE number = ?
-            '''.format(game_no), (team_a_GA.iat[x, 3],))
+                WHERE number = ? AND team_name = ?
+            '''.format(game_no), (team_a_ga.iat[x, 3],team_a_name,))
             conn.commit()
 
 
@@ -210,18 +204,18 @@ for x in range(1, len(team_a_GA)):
 
 
 
-
+"""      
 ##above needs to be done below for team b it seems. 
 
 team_b_name = list_df[10].columns[1]
-team_b_GA = list_df[8].dropna()
+team_b_ga = list_df[8].dropna()
 print("\n")
-for x in range(1,len(team_b_GA)):
+for x in range(1,len(team_b_ga)):
     
     print("TEAM B: ")
     
     try:
-        print("Goal:", team_b_GA.iat[x, 1], "A1:", team_b_GA.iat[x, 2], "A2:", team_b_GA.iat[x, 3])
+        print("Goal:", team_b_ga.iat[x, 1], "A1:", team_b_ga.iat[x, 2], "A2:", team_b_ga.iat[x, 3])
     except Exception as a:
         print(a)
         pass
@@ -260,7 +254,7 @@ gka1_mip = int(gka1_mip)
 try:
 #GKA2
     gka2_saves = int(list_df[13].iat[5, 1])
-    gka2_number = list_df[12].iat[1, 0]
+    gka2_number = int(list_df[12].iat[1, 0])
     gka2_mip,y = list_df[12].iat[1, 1].split(":")
     gka2_ga = int(list_df[12].iat[1, 2])
     gka2_mip = int(gka2_mip)
@@ -275,7 +269,7 @@ gkb1_mip = int(gkb1_mip)
 try:
 #GKB2
     gkb2_saves = int(list_df[13].iat[5, 3])
-    gka2_number = list_df[12].iat[1, 3]
+    gka2_number = int(list_df[12].iat[1, 3])
     gka2_mip,y = list_df[12].iat[1, 4].split(":")
     gka2_ga = int(list_df[12].iat[1, 5])
     gka2_mip = int(gka2_mip)
@@ -292,9 +286,9 @@ try:
     cursor.execute('''
     UPDATE "{}"
     SET saves = ?,
-        MIP = ?,
-        GA = ?
-    WHERE number = ? AND Team_name = ?
+        mip = ?,
+        ga = ?
+    WHERE number = ? AND team_name = ?
 '''.format(game_no), (gka1_saves, gka1_mip, gka1_ga, gka1_number, team_a_name))
 
     conn.commit()
@@ -307,8 +301,8 @@ try:
     cursor.execute('''
     UPDATE "{}"
     SET saves = ?,
-        MIP = ?,
-        GA = ?
+        mip = ?,
+        ga = ?
     WHERE number = ? 
 '''.format(game_no), (gkb1_saves, gkb1_mip, gkb1_ga, gkb1_number))
 
@@ -326,8 +320,8 @@ for x in range(1, len(list_df[5].dropna())):
     
     cursor.execute('''
     UPDATE "{}"
-    SET PIM = PIM + {}
-    WHERE number = ?  AND Team_name = ?
+    SET pim = pim + {}
+    WHERE number = ?  AND team_name = ?
 '''.format(game_no, pen_time), (pen_player,team_a_name,))
     conn.commit()
     
@@ -339,8 +333,8 @@ for x in range(len(list_df[6].dropna())):
     
     cursor.execute('''
     UPDATE "{}"
-    SET PIM = PIM + {}
-    WHERE number = ?  AND Team_name = ?
+    SET pim = pim + {}
+    WHERE number = ?  AND team_name = ?
 '''.format(game_no, pen_time), (pen_player, team_b_name,))
     conn.commit()
 ######################################################################################    
@@ -351,7 +345,7 @@ for x in range(len(list_df[6].dropna())):
 
 
 
-#todo team b needs goals and assists, GKA2 GKB1 GKB2 need their stats to database 
+#todo team b needs goals and assists, GKA2 GKB1 GKB2 need their stats to database and need to fix goals section 
     
 
 ###############################below is getting teamdatabases up and running############################################
@@ -364,10 +358,13 @@ cursor.execute('''
         player_name TEXT,
         position TEXT,
         saves INTEGER,
-        MIP FLOAT,
-        GA INTEGER,
+        mip FLOAT,
+        ga INTEGER,
         wins INTEGER, 
-        sog INTEGER      
+        sog INTEGER,
+        loss INTEGER,
+        tie INTEGER,
+        points INTEGER     
     )
 '''.format(team_a_name))
 
@@ -380,10 +377,13 @@ cursor.execute('''
         player_name TEXT,
         position TEXT,
         saves INTEGER,
-        MIP FLOAT,
-        GA INTEGER,
+        mip FLOAT,
+        ga INTEGER,
         wins INTEGER, 
-        sog INTEGER      
+        sog INTEGER,
+        loss INTEGER.
+        tie INTEGER,
+        points INTEGER     
     )
 '''.format(team_b_name))
 
@@ -392,7 +392,7 @@ cursor.execute('''
 #you can write it like this instead
 cursor.execute(f'''
     INSERT INTO "{team_a_name}" (
-        team_name, goals, assists, pim, player_name, position, saves, MIP, GA, wins, sog
+        team_name, goals, assists, pim, player_name, position, saves, mip, ga, wins, sog
     ) VALUES (
         'Team A', 0, 0, 0, 'Player 1', 'Forward', 0, 0.0, 0, 0, 0
     )
