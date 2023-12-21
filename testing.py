@@ -245,45 +245,21 @@ print("SHOTS A ", shots_a, " SHOTS B ", shots_b)
 
 
 #use map int on mip 
+
+
+
+
+
+
+
 #GKA1
 gka1_saves = int(list_df[13].iat[5, 0])
 gka1_number = int(list_df[12].iat[0, 0])
 gka1_mip,y = list_df[12].iat[0, 1].split(":")
 gka1_ga = int(list_df[12].iat[0, 2])
 gka1_mip = int(gka1_mip)
-try:
-#GKA2
-    gka2_saves = int(list_df[13].iat[5, 1])
-    gka2_number = int(list_df[12].iat[1, 0])
-    gka2_mip,y = list_df[12].iat[1, 1].split(":")
-    gka2_ga = int(list_df[12].iat[1, 2])
-    gka2_mip = int(gka2_mip)
-except:
-    pass
-#GKB1
-gkb1_saves = int(list_df[13].iat[5, 2])
-gkb1_number = int(list_df[12].iat[0, 3])
-gkb1_mip,y = list_df[12].iat[0, 4].split(":")
-gkb1_ga = int(list_df[12].iat[0, 5])
-gkb1_mip = int(gkb1_mip)
-try:
-#GKB2
-    gkb2_saves = int(list_df[13].iat[5, 3])
-    gka2_number = int(list_df[12].iat[1, 3])
-    gka2_mip,y = list_df[12].iat[1, 4].split(":")
-    gka2_ga = int(list_df[12].iat[1, 5])
-    gka2_mip = int(gka2_mip)
-except:
-    pass
-
-
-print(team_b_name, " ", gkb1_number, " ", gkb1_saves)
-
-
-
-
-try:
-    cursor.execute('''
+#add GKA1 stats to table
+cursor.execute('''
     UPDATE "{}"
     SET saves = ?,
         mip = ?,
@@ -291,24 +267,75 @@ try:
     WHERE number = ? AND team_name = ?
 '''.format(game_no), (gka1_saves, gka1_mip, gka1_ga, gka1_number, team_a_name))
 
-    conn.commit()
-except Exception as e:
-    print(e)  
-
-
+conn.commit()
+  
 
 try:
+#GKA2 wrapped in try block becuase there isn't always a second goalie
+    gka2_saves = int(list_df[13].iat[5, 1])
+    
+    gka2_number = int(list_df[12].iat[1, 0])
+    
+    gka2_mip,y = list_df[12].iat[1, 1].split(":")
+    gka2_ga = int(list_df[12].iat[1, 2])
+    gka2_mip = int(gka2_mip)
+    print(gka2_number, " " ,gka2_mip , gka2_saves )
     cursor.execute('''
+        UPDATE "{}"
+        SET saves = ?,
+            mip = ?,
+            ga = ?
+        WHERE number = ? AND team_name = ?
+    '''.format(game_no), (gka2_saves, gka2_mip, gka2_ga, gka2_number, team_a_name))
+except Exception as e:
+    pass
+
+#GKB1
+gkb1_saves = int(list_df[13].iat[5, 2])
+gkb1_number = int(list_df[12].iat[0, 3])
+gkb1_mip,y = list_df[12].iat[0, 4].split(":")
+gkb1_ga = int(list_df[12].iat[0, 5])
+gkb1_mip = int(gkb1_mip)
+
+cursor.execute('''
     UPDATE "{}"
     SET saves = ?,
         mip = ?,
         ga = ?
-    WHERE number = ? 
-'''.format(game_no), (gkb1_saves, gkb1_mip, gkb1_ga, gkb1_number))
+    WHERE number = ? AND team_name = ?
+    '''.format(game_no), (gkb1_saves, gkb1_mip, gkb1_ga, gkb1_number,team_b_name, ))
 
-    conn.commit()
+conn.commit()
+
+
+
+
+try:
+#GKB2 
+#GKB2 wrapped in try block becuase there isn't always a second goalie
+   
+#GKB2
+    gkb2_saves = int(list_df[13].iat[5, 3])
+    gkb2_number = int(list_df[12].iat[1, 3])
+    gkb2_mip,y = list_df[12].iat[1, 4].split(":")
+    gkb2_ga = int(list_df[12].iat[1, 5])
+    gkb2_mip = int(gkb2_mip)
+
+
+    cursor.execute('''
+        UPDATE "{}"
+        SET saves = ?,
+            mip = ?,
+            ga = ?
+        WHERE number = ? AND team_name = ?
+    '''.format(game_no), (gkb2_saves, gkb2_mip, gkb2_ga, gkb2_number, team_b_name,))
 except Exception as e:
     print(e)
+
+
+
+
+
 
 
 
@@ -381,12 +408,12 @@ cursor.execute('''
         ga INTEGER,
         wins INTEGER, 
         sog INTEGER,
-        loss INTEGER.
+        loss INTEGER,
         tie INTEGER,
         points INTEGER     
     )
 '''.format(team_b_name))
-
+conn.commit()
 
 """
 #you can write it like this instead
