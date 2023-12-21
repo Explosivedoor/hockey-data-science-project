@@ -8,7 +8,7 @@ conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hoc
 cursor = conn.cursor()
 
 list_df = tabula.read_pdf_with_template(
-    input_path='D:\\Downloads\\Hockey\\1-1.pdf',
+    input_path='D:\\Downloads\\Hockey\\3-2.pdf',
     template_path="D:\\Downloads\\Hockey\\template6.json",
     pages='all',
     
@@ -19,8 +19,21 @@ list_df = tabula.read_pdf_with_template(
 for index, i in enumerate(list_df):
     print("INDEX IS: " , index, list_df[index])
 '''   
-
-
+#creates Leaague database
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS "KIHF" (
+	"division"	INTEGER,
+	"team_name"	TEXT UNIQUE,
+	"goals"	INTEGER,
+	"wins"	INTEGER,
+	"losses"	INTEGER,
+	"ties"	INTEGER,
+	"sog"	INTEGER,
+	"ga"	INTEGER,
+	"pim"	INTEGER
+)    
+    )
+''')
 
 
 
@@ -39,7 +52,7 @@ cursor.execute('''
         number INTEGER,
         team_name TEXT,       
         goal INTEGER ,
-        Assist INTEGER,
+        assist INTEGER,
         pim INTEGER,
         player_name TEXT,
         position TEXT,
@@ -88,7 +101,7 @@ for y in range(len(team_a_roster) ):
         if position == "0" or 0 : 
             position = 'D'
         cursor.execute('''
-                        INSERT INTO"{}"  (number, team_name, goal, Assist, pim, player_name, position)
+                        INSERT INTO"{}"  (number, team_name, goal, assist, pim, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_a_name ,player_name,position,))
@@ -114,7 +127,7 @@ for y in range(len(team_a_roster) ):
             player_name = player_name.replace("(A)", '').strip()
             print("NAME A",player_name)
             cursor.execute('''
-                        INSERT INTO "{}"  (number, team_name, goal, Assist, pim, player_name, position)
+                        INSERT INTO "{}"  (number, team_name, goal, assist, pim, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_a_name ,player_name,position,))
@@ -149,7 +162,7 @@ for y in range(len(team_b_roster) ):
         if position == "0" or 0 : 
             position = 'D'
         cursor.execute('''
-                        INSERT INTO "{}" (number, team_name, goal, Assist, pim, player_name, position)
+                        INSERT INTO "{}" (number, team_name, goal, assist, pim, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_b_name ,player_name,position,))
@@ -172,7 +185,7 @@ for y in range(len(team_b_roster) ):
             player_name = player_name.replace("(A)", '').strip()
             print("BREEEEEE",player," ", player_name," ",position)
             cursor.execute('''
-                        INSERT INTO "{}"  (number, team_name, goal, Assist, pim, player_name, position)
+                        INSERT INTO "{}"  (number, team_name, goal, assist, pim, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_b_name,player_name,position,))
@@ -206,7 +219,7 @@ for x in range(1, len(team_a_ga)):
             
             cursor.execute('''
                 UPDATE "{}" 
-                SET Assist = Assist + 1
+                SET assist = assist + 1
                 WHERE number = ? AND team_name = ?
             '''.format(game_no), (team_a_ga.iat[x, 2],team_a_name,))
             conn.commit()
@@ -215,7 +228,7 @@ for x in range(1, len(team_a_ga)):
             
             cursor.execute('''
                 UPDATE "{}" 
-                SET Assist = Assist + 1
+                SET assist = assist + 1
                 WHERE number = ? AND team_name = ?
             '''.format(game_no), (team_a_ga.iat[x, 3],team_a_name,))
             conn.commit()
@@ -257,7 +270,7 @@ for x in range(1,len(team_b_ga)):
             
             cursor.execute('''
                 UPDATE "{}" 
-                SET Assist = Assist + 1
+                SET assist = assist + 1
                 WHERE number = ? AND team_name = ?
             '''.format(game_no), (team_b_ga.iat[x, 2],team_b_name,))
             conn.commit()
@@ -266,7 +279,7 @@ for x in range(1,len(team_b_ga)):
             
             cursor.execute('''
                 UPDATE "{}" 
-                SET Assist = Assist + 1
+                SET assist = assist + 1
                 WHERE number = ? AND team_name = ?
             '''.format(game_no), (team_b_ga.iat[x, 3],team_b_name,))
             conn.commit()
@@ -409,28 +422,38 @@ except Exception as e:
 ######################################################################################
 #penalties section
 for x in range(1, len(list_df[5].dropna())):
-    pen_player  = list_df[5].dropna().iat[x, 1]
-    pen_time  = list_df[5].dropna().iat[x, 2]
+    if str(list_df[5].dropna().iat[x, 1]).startswith("T"):
+           #add to team PIM not to player here todo
+           print("WORKEEEEEEEEEEED")
+           continue
+    else:
+        pen_player  = list_df[5].dropna().iat[x, 1]
+        pen_time  = list_df[5].dropna().iat[x, 2]
+        
+        cursor.execute('''
+        UPDATE "{}"
+        SET pim = pim + {}
+        WHERE number = ?  AND team_name = ?
+    '''.format(game_no, pen_time), (pen_player,team_a_name,))
+        conn.commit()
     
-    cursor.execute('''
-    UPDATE "{}"
-    SET pim = pim + {}
-    WHERE number = ?  AND team_name = ?
-'''.format(game_no, pen_time), (pen_player,team_a_name,))
-    conn.commit()
-    
+#Where there is a bench minor the number with start with T, sould be just added to team PIM 
 
 for x in range(len(list_df[6].dropna())):
-      
-    pen_player = int(list_df[6].dropna().iat[x, 1])
-    pen_time = int(list_df[6].dropna().iat[x, 2])
-    
-    cursor.execute('''
-    UPDATE "{}"
-    SET pim = pim + {}
-    WHERE number = ?  AND team_name = ?
-'''.format(game_no, pen_time), (pen_player, team_b_name,))
-    conn.commit()
+    if str(list_df[6].dropna().iat[x, 1]).startswith("T"):
+           #add to team PIM not to player here todo
+           print("WORKEEEEEEEEEEED")
+           continue
+    else:
+        pen_player = int(list_df[6].dropna().iat[x, 1])
+        pen_time = int(list_df[6].dropna().iat[x, 2])
+        
+        cursor.execute('''
+        UPDATE "{}"
+        SET pim = pim + {}
+        WHERE number = ?  AND team_name = ?
+    '''.format(game_no, pen_time), (pen_player, team_b_name,))
+        conn.commit()
 ######################################################################################    
     
 
@@ -477,7 +500,20 @@ cursor.execute('''
     
 
 
-
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS "KIHF" (
+	"division"	INTEGER,
+	"team_name"	TEXT UNIQUE,
+	"goals"	INTEGER,
+	"wins"	INTEGER,
+	"losses"	INTEGER,
+	"ties"	INTEGER,
+	"sog"	INTEGER,
+	"ga"	INTEGER,
+	"pim"	INTEGER
+)    
+    )
+''')
         
 
 conn.commit()
