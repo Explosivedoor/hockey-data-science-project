@@ -67,6 +67,9 @@ for y in range(len(team_a_roster) ):
         player = player.replace("V", '',).replace("T", '',1).replace("F", '',1).strip()
         player, player_name = player.split(" ",1) 
         position = team_a_roster.iat[y, 2]
+        #sometimes tabula mistakes D for 0
+        if position == "0" or 0 : 
+            position = 'D'
         cursor.execute('''
                         INSERT INTO"{}"  (number, team_name, Goal, Assist, pim, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
@@ -82,6 +85,9 @@ for y in range(len(team_a_roster) ):
         player_name = team_a_roster.iat[y, 2]
         try:
             position = team_a_roster.iat[y, 3]
+            #sometimes tabula mistakes D for 0
+            if position == "0" or 0 : 
+                position = 'D'
             player = int(player)
             print("PssssNAME", player_name)
             #replaces V (which is in there for some reason) and replaces it, strips out white space. Next  remove captian and assistant captian marks 
@@ -122,6 +128,9 @@ for y in range(len(team_b_roster) ):
         player = player.replace("V", '',).replace("T", '',1).replace("F", '',1).strip()
         player, player_name = player.split(" ",1) 
         position = team_b_roster.iat[y, 2]
+        #sometimes tabula mistakes D for 0
+        if position == "0" or 0 : 
+            position = 'D'
         cursor.execute('''
                         INSERT INTO "{}" (number, team_name, Goal, Assist, pim, player_name, position)
                         VALUES (?,?,0,0,0,?,?)
@@ -135,7 +144,9 @@ for y in range(len(team_b_roster) ):
         
         try:
             position = team_b_roster.iat[y, 2]
-            
+            #sometimes tabula mistakes D for 0
+            if position == "0" or 0 : 
+                position = 'D'
             player = int(player)
             #replaces V (which is in there for some reason) and replaces it, strips out white space. Next  remove captian and assistant captian marks 
             player_name = player_name.replace("V", '').strip()
