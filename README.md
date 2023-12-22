@@ -6,4 +6,5 @@ For example, for two tables that should be the same, one table would start the d
 # Function of the project 
 This project is pretty complex (for me at least) in the future I will illusrate below to give a better understanding. For now though, I will explain in the best way I can. This project first scrapes a website for information about a hockey leauge's schedule and current game results. It takes that information and writes into a CSV with proper formating, to upload on to a second site, which uses SportsPress (in the future this will hopfully be updated to use a REST api to update SportsPress). The next part of the program finds all links to completed games' scoresheets in PDF format and downloads them. It checks to see if they have already been downloaded, skips those that have. The data from those PDF scoresheets are then extracted using tabula into dataframes. These dataframes are manipulated to extract the stats for each game (eg. Goals, Assits, Roster, etc.). The manipulated data is also placed into a SQlite database, with each game being its own table in the database. Finally (and still currently a work in progress) the database will be used to update SportsPress with the statistics. 
 
-
+# Below is an example of the scoresheet
+![ice hockey scoresheet](https://github.com/Explosivedoor/hockey-data-science-project/blob/main/5-1.jpg?raw?=true)
