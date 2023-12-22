@@ -76,13 +76,48 @@ cursor.execute('''
     INSERT OR IGNORE INTO KIHF (division,team_name)
     VALUES (?,?)
 ''',(div,team_b_name,))
-
-# Commit the changes
 conn.commit()
 
-########################################################################################################################################################
-''''''
+#adding team tables 
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS "{}" (     
+        goals INTEGER ,
+        assists INTEGER,
+        pim INTEGER,
+        player_name TEXT,
+        position TEXT,
+        saves INTEGER,
+        mip FLOAT,
+        ga INTEGER,
+        wins INTEGER, 
+        sog INTEGER,
+        loss INTEGER,
+        tie INTEGER,
+        points INTEGER,
+        FOREIGN KEY (team_name)            
+    )
+'''.format(team_a_name))
 
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS "{}" (
+        goals INTEGER ,
+        assists INTEGER,
+        pim INTEGER,
+        player_name TEXT,
+        position TEXT,
+        saves INTEGER,
+        mip FLOAT,
+        ga INTEGER,
+        wins INTEGER, 
+        sog INTEGER,
+        loss INTEGER,
+        tie INTEGER,    
+        FOREIGN KEY (team_name)        
+    )
+'''.format(team_b_name))
+##########################################################################################################################################################################
+''''''
+#Adding Players to tables 
 print("HERE", team_a_name)
 print(pd.isna(list_df[2].iat[0, 1]))
 #goals and assists, drops empty rows for processing
@@ -424,7 +459,7 @@ except Exception as e:
 for x in range(1, len(list_df[5].dropna())):
     if str(list_df[5].dropna().iat[x, 1]).startswith("T"):
            #add to team PIM not to player here todo
-           print("WORKEEEEEEEEEEED")
+           
            continue
     else:
         pen_player  = list_df[5].dropna().iat[x, 1]
@@ -442,7 +477,7 @@ for x in range(1, len(list_df[5].dropna())):
 for x in range(len(list_df[6].dropna())):
     if str(list_df[6].dropna().iat[x, 1]).startswith("T"):
            #add to team PIM not to player here todo
-           print("WORKEEEEEEEEEEED")
+           
            continue
     else:
         pen_player = int(list_df[6].dropna().iat[x, 1])
@@ -466,57 +501,11 @@ for x in range(len(list_df[6].dropna())):
     
 
 ###############################below is updating team stats############################################
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS "{}" (     
-        goals INTEGER ,
-        assists INTEGER,
-        pim INTEGER,
-        player_name TEXT,
-        position TEXT,
-        saves INTEGER,
-        mip FLOAT,
-        ga INTEGER,
-        wins INTEGER, 
-        sog INTEGER,
-        loss INTEGER,
-        tie INTEGER,
-        points INTEGER     
-    )
-'''.format(team_a_name))
 
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS "{}" (
-        team_name TEXT PRIMARY KEY,     
-        goals INTEGER ,
-        pim INTEGER,
-        ga INTEGER,
-        wins INTEGER, 
-        sog INTEGER,
-        loss INTEGER,
-        tie INTEGER,
-        points INTEGER     
-    )
-'''.format(team_b_name))
     
 
 
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS "KIHF" (
-	"division"	INTEGER,
-	"team_name"	TEXT UNIQUE,
-	"goals"	INTEGER,
-	"wins"	INTEGER,
-	"losses"	INTEGER,
-	"ties"	INTEGER,
-	"sog"	INTEGER,
-	"ga"	INTEGER,
-	"pim"	INTEGER
-)    
-    )
-''')
-        
 
-conn.commit()
 
 """
 #you can write it like this instead
