@@ -89,6 +89,7 @@ cursor.execute('''
         saves INTEGER,
         mip FLOAT,
         ga INTEGER,
+        shots INTEGER,
         wins INTEGER, 
         sog INTEGER,
         loss INTEGER,
@@ -108,6 +109,7 @@ cursor.execute('''
         saves INTEGER,
         mip FLOAT,
         ga INTEGER,
+        shots INTEGER,
         wins INTEGER, 
         sog INTEGER,
         loss INTEGER,
@@ -493,7 +495,7 @@ for x in range(len(list_df[6].dropna())):
     
 
 
-#todo update team stats in KIHF and player stats in team table, player stats table will need to be called at thte start where tables are being created
+#todo update team stats in KIHF and player stats in team table, player stats table will need to be called at thte start where tables are being created. need goalies table.
 
 
 
