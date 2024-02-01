@@ -8,7 +8,7 @@ conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hoc
 cursor = conn.cursor()
 
 list_df = tabula.read_pdf_with_template(
-    input_path='D:\\Downloads\\Hockey\\4-2.pdf',
+    input_path='D:\\Downloads\\Hockey\\2-2.pdf',
     template_path="D:\\Downloads\\Hockey\\template6.json",
     pages='all',        
 )
@@ -22,14 +22,14 @@ cursor.execute('''
     CREATE TABLE IF NOT EXISTS "KIHF" (
         "division"  INTEGER,
         "team_name" TEXT UNIQUE,
-        "goal"     INTEGER,
-        "wins"      INTEGER,
-        "losses"    INTEGER,
-        "ties"      INTEGER,
-        "sog"       INTEGER,
-        "ga"        INTEGER,
-        "pim"       INTEGER,
-        "sa"        INTEGER
+        "goal"     INTEGER DEFAULT 0,
+        "wins"      INTEGER DEFAULT 0,
+        "losses"    INTEGER DEFAULT 0,
+        "ties"      INTEGER DEFAULT 0,
+        "sog"       INTEGER DEFAULT 0,
+        "ga"        INTEGER DEFAULT 0,
+        "pim"       INTEGER DEFAULT 0,
+        "sa"        INTEGER DEFAULT 0
     )
 ''')
 conn.commit()
@@ -392,6 +392,9 @@ for x in range(1,len(team_b_ga)):
 # this function cleans data for cells with A:B, for some reason tabula breaks it and has extra whitespace characters in there
 def clean_data(cell):
     cell1,cell2 = re.sub(r'\s+', '', cell).strip().split(":")
+    return int(cell1), int(cell2)
+def clean_data2(cell):
+    cell1,cell2 = re.sub(r'\s+', '', cell).strip().split(":")
     return cell1,cell2
 
 def get_sec(time_str):
@@ -551,75 +554,115 @@ except Exception as e:
 #penalties section
 #team A    
 for x in range(1, len(list_df[5].dropna())):
-    if str(list_df[5].dropna().iat[x, 1]).startswith("T"):
-           #add to team PIM not to player here todo
-           
-           continue
-    else:
-        pen_player  = list_df[5].dropna().iat[x, 1]
-        pen_time  = list_df[5].dropna().iat[x, 2]
+    #this try block is here only because they sometimes forget to put in penalty times, this is an edge case that case up. Prob better ways to deal with this but it will be skiped for now
+    try:
+        if str(list_df[5].dropna().iat[x, 1]).startswith("T"):
+            #add to team PIM not to player here todo
+            
+            continue
         
-        cursor.execute('''
-        UPDATE "{}"
-        SET pim = pim + {}
-        WHERE number = ?  AND team_name = ?
-    '''.format(game_no, pen_time), (pen_player,team_a_name,))
-        conn.commit()
-        cursor.execute('''
-        UPDATE "{}"
-        SET pim = pim + {}
-        WHERE number = ?  
-    '''.format(team_a_name, pen_time), (pen_player,))
-        conn.commit()
+        else:
+            pen_player  = list_df[5].dropna().iat[x, 1]
+            pen_time  = list_df[5].dropna().iat[x, 2]
+            
+            cursor.execute('''
+            UPDATE "{}"
+            SET pim = pim + {}
+            WHERE number = ?  AND team_name = ?
+        '''.format(game_no, pen_time), (pen_player,team_a_name,))
+            conn.commit()
+            cursor.execute('''
+            UPDATE "{}"
+            SET pim = pim + {}
+            WHERE number = ?  
+        '''.format(team_a_name, pen_time), (pen_player,))
+            conn.commit()
+    except:
+        continue
     
 #Where there is a bench minor the number with start with T, sould be just added to team PIM 
 #team B
 for x in range(len(list_df[6].dropna())):
-    if str(list_df[6].dropna().iat[x, 1]).startswith("T"):
-           #add to team PIM not to player here todo
-           
-           continue
-    else:
-        pen_player = int(list_df[6].dropna().iat[x, 1])
-        pen_time = int(list_df[6].dropna().iat[x, 2])
-        
-        cursor.execute('''
-        UPDATE "{}"
-        SET pim = pim + {}
-        WHERE number = ?  AND team_name = ?
-    '''.format(game_no, pen_time), (pen_player, team_b_name,))
-        conn.commit()
-        cursor.execute('''
-        UPDATE "{}"
-        SET pim = pim + {}
-        WHERE number = ? 
-    '''.format(team_b_name, pen_time), (pen_player,))
-        conn.commit()
+    try:
+        if str(list_df[6].dropna().iat[x, 1]).startswith("T"):
+            #add to team PIM not to player here todo
+            
+            continue
+        else:
+            pen_player = int(list_df[6].dropna().iat[x, 1])
+            pen_time = int(list_df[6].dropna().iat[x, 2])
+            
+            cursor.execute('''
+            UPDATE "{}"
+            SET pim = pim + {}
+            WHERE number = ?  AND team_name = ?
+        '''.format(game_no, pen_time), (pen_player, team_b_name,))
+            conn.commit()
+            cursor.execute('''
+            UPDATE "{}"
+            SET pim = pim + {}
+            WHERE number = ? 
+        '''.format(team_b_name, pen_time), (pen_player,))
+            conn.commit()
+    except:
+        continue
         
 ######################################################################################    
-#KIHF table update section 
-       
+#KIHF table update section
+team_a_goals, team_b_goals = clean_data(list_df[14].iat[6,2])
+team_a_sog, team_b_sog = clean_data(list_df[14].iat[6,3])
+team_a_pim, team_b_pim =  clean_data(list_df[14].iat[6,4])
+team_b_sa, team_a_sa = clean_data(list_df[14].iat[6,3])    
+team_b_ga, team_a_ga = clean_data(list_df[14].iat[6,2])
+#just setting the variables to zero before if statment 
 
+team_a_win,team_b_win,team_a_loss,team_b_loss,team_a_tie,team_b_tie = 0,0,0,0,0,0
 
+if team_a_goals > team_b_goals:
+    team_a_win = 1
+    team_b_loss = 1
+elif team_a_goals < team_b_goals:
+    team_b_win = 1
+    team_a_loss = 1
+else:
+    team_a_tie = 1 
+    team_b_tie = 1
 
+cursor.execute('''
+    UPDATE "KIHF"
+    SET goal = goal + ?, 
+        sog = sog + ?,
+        ga = ga + ?,
+        pim = pim + ?,
+        sa = sa + ?,
+        wins = wins + ?,
+        losses = losses +?,
+        ties = ties +?
+    WHERE team_name = ?
+''', (team_a_goals, team_a_sog, team_a_ga, team_a_pim, team_a_sa,team_a_win,team_a_loss,team_a_tie, team_a_name))
+conn.commit()
+cursor.execute('''
+    UPDATE "KIHF"
+    SET goal = goal + ?, 
+        sog = sog + ?,
+        ga = ga + ?,
+        pim = pim + ?,
+        sa = sa + ?,
+        wins = wins + ?,
+        losses = losses +?,
+        ties = ties + ?
+    WHERE team_name = ?
+''', (team_b_goals, team_b_sog, team_b_ga, team_b_pim, team_b_sa,team_b_win,team_b_loss,team_b_tie, team_b_name))
+conn.commit()
 
-#next will be the KIHF table (PIM will need to be added here for bench minors, still todo in penalties section)
-#finally goalie table 
-        
-#need SOG for team (saves + ga =)
-        
-
-
-
-    
-
-
-    
-
-
-
+#goalie table?
 
 """
+
+
+
+
+
 #you can write it like this instead
 cursor.execute(f'''
     INSERT INTO "{team_a_name}" (
