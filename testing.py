@@ -8,15 +8,15 @@ conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hoc
 cursor = conn.cursor()
 
 list_df = tabula.read_pdf_with_template(
-    input_path='D:\\Downloads\\Hockey\\2-2.pdf',
-    template_path="D:\\Downloads\\Hockey\\template6.json",
+    input_path='D:\\Downloads\\Hockey\\2-11.pdf',
+    template_path="D:\\Downloads\\Hockey\\template8.json",
     pages='all',        
 )
 
-'''
+
 for index, i in enumerate(list_df):
     print("INDEX IS: " , index, list_df[index])
-'''   
+ 
 #creates League database
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS "KIHF" (
@@ -124,26 +124,32 @@ for y in range(len(team_a_roster) ):
     
     #edge case detection for team A
     if pd.isna(list_df[2].iat[0, 1]) or list_df[2].iat[0, 1] in ["(C)", "(A)"]:
-        player = list_df[2].iat[y, 0]
-        player = player.replace("V", '',).replace("T", '',1).replace("F", '',1).strip()
-        player, player_name = player.split(" ",1) 
-        position = team_a_roster.iat[y, 2]
-        #sometimes tabula mistakes D for 0
-        if position == "0" or 0 : 
-            position = 'D'
-        cursor.execute('''
-                        INSERT INTO"{}"  (number, team_name, goal, assist, pim, player_name, position)
-                        VALUES (?,?,0,0,0,?,?)
-                        
-                    '''.format(game_no), (player,team_a_name ,player_name,position,))
-        #adds players to their team tables if they havent been added before. This is more for automation because I dont want to make the tables manually
-        cursor.execute('''
-                        INSERT OR IGNORE INTO  "{}"  (number, team_name, player_name, position)
-                        VALUES (?,?,?,?)
-                        
-                    '''.format(team_a_name), (player,team_a_name ,player_name,position,))
-        conn.commit()
-        print(player, player_name,position)
+        #try is here because this can t
+        try:
+            player = list_df[2].iat[y, 0]
+            print("BREAKS HERE:", player)
+            player = player.replace("V", '',).replace("T", '',1).replace("F", '',1).strip()
+            
+            player, player_name = player.split(" ",1) 
+            position = team_a_roster.iat[y, 2]
+            #sometimes tabula mistakes D for 0
+            if position == "0" or 0 : 
+                position = 'D'
+            cursor.execute('''
+                            INSERT INTO"{}"  (number, team_name, goal, assist, pim, player_name, position)
+                            VALUES (?,?,0,0,0,?,?)
+                            
+                        '''.format(game_no), (player,team_a_name ,player_name,position,))
+            #adds players to their team tables if they havent been added before. This is more for automation because I dont want to make the tables manually
+            cursor.execute('''
+                            INSERT OR IGNORE INTO  "{}"  (number, team_name, player_name, position)
+                            VALUES (?,?,?,?)
+                            
+                        '''.format(team_a_name), (player,team_a_name ,player_name,position,))
+            conn.commit()
+            print(player, player_name,position)
+        except:
+            continue
 
 
      #Normal Condition for A 
@@ -402,8 +408,7 @@ def get_sec(time_str):
     m, s = time_str.split(':')
     return 3600 + int(m) * 60 + int(s)
 
-shots_a,shots_b  = clean_data(list_df[14].iat[6, 3])
-print("SHOTS A ", shots_a, " SHOTS B ", shots_b)
+
 
 
 
@@ -481,7 +486,11 @@ except Exception as e:
 
 #GKB1
 gkb1_saves = int(list_df[13].iat[5, 2])
-gkb1_number = int(list_df[12].iat[0, 3])
+#another try block for another edge case where the sheet is filled out incorrectly
+try:
+    gkb1_number = int(list_df[12].iat[0, 3])
+except:
+    gkb1_number = int(list_df[12].iat[1, 3])
 gkb1_mip,y = list_df[12].iat[0, 4].split(":")
 gkb1_ga = int(list_df[12].iat[0, 5])
 gkb1_mip = int(gkb1_mip)
@@ -609,11 +618,23 @@ for x in range(len(list_df[6].dropna())):
         
 ######################################################################################    
 #KIHF table update section
-team_a_goals, team_b_goals = clean_data(list_df[14].iat[6,2])
-team_a_sog, team_b_sog = clean_data(list_df[14].iat[6,3])
-team_a_pim, team_b_pim =  clean_data(list_df[14].iat[6,4])
-team_b_sa, team_a_sa = clean_data(list_df[14].iat[6,3])    
-team_b_ga, team_a_ga = clean_data(list_df[14].iat[6,2])
+#todo add edge case where numbers could be messed up    
+try: 
+    
+    team_a_goals, team_b_goals = clean_data(list_df[14].iat[9,2])
+    team_a_sog, team_b_sog = clean_data(list_df[14].iat[9,3])
+    team_a_pim, team_b_pim =  clean_data(list_df[14].iat[9,4])
+    team_b_sa, team_a_sa = clean_data(list_df[14].iat[9,3])    
+    team_b_ga, team_a_ga = clean_data(list_df[14].iat[9,2])
+except:
+    team_a_goals, team_b_goals = clean_data(list_df[14].iat[6,2])
+    team_a_sog, team_b_sog = clean_data(list_df[14].iat[6,3])
+    team_a_pim, team_b_pim =  clean_data(list_df[14].iat[6,4])
+    team_b_sa, team_a_sa = clean_data(list_df[14].iat[6,3])    
+    team_b_ga, team_a_ga = clean_data(list_df[14].iat[6,2])
+    
+
+
 #just setting the variables to zero before if statment 
 
 team_a_win,team_b_win,team_a_loss,team_b_loss,team_a_tie,team_b_tie = 0,0,0,0,0,0
