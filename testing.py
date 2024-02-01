@@ -8,33 +8,31 @@ conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hoc
 cursor = conn.cursor()
 
 list_df = tabula.read_pdf_with_template(
-    input_path='D:\\Downloads\\Hockey\\3-2.pdf',
+    input_path='D:\\Downloads\\Hockey\\4-2.pdf',
     template_path="D:\\Downloads\\Hockey\\template6.json",
-    pages='all',
-    
-    
+    pages='all',        
 )
 
 '''
 for index, i in enumerate(list_df):
     print("INDEX IS: " , index, list_df[index])
 '''   
-#creates Leaague database
+#creates League database
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS "KIHF" (
-	"division"	INTEGER,
-	"team_name"	TEXT UNIQUE,
-	"goals"	INTEGER,
-	"wins"	INTEGER,
-	"losses"	INTEGER,
-	"ties"	INTEGER,
-	"sog"	INTEGER,
-	"ga"	INTEGER,
-	"pim"	INTEGER
-)    
+        "division"  INTEGER,
+        "team_name" TEXT UNIQUE,
+        "goal"     INTEGER,
+        "wins"      INTEGER,
+        "losses"    INTEGER,
+        "ties"      INTEGER,
+        "sog"       INTEGER,
+        "ga"        INTEGER,
+        "pim"       INTEGER,
+        "sa"        INTEGER
     )
 ''')
-
+conn.commit()
 
 
 #table creation naming
@@ -49,7 +47,7 @@ div,game = game_no.split("-")
 #create game table
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS "{}" (
-        number INTEGER,
+        number INTEGER ,
         team_name TEXT,       
         goal INTEGER ,
         assist INTEGER,
@@ -71,52 +69,48 @@ cursor.execute('''
     INSERT OR IGNORE INTO KIHF (division,team_name)
     VALUES (?,?)
 ''',(div,team_a_name,))
-
+conn.commit()
 cursor.execute('''
     INSERT OR IGNORE INTO KIHF (division,team_name)
     VALUES (?,?)
 ''',(div,team_b_name,))
 conn.commit()
-
+print(team_a_name)
 #adding team tables 
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS "{}" (     
-        goals INTEGER ,
-        assists INTEGER,
-        pim INTEGER,
         player_name TEXT,
+        number INTEGER UNIQUE,
+        goal INTEGER DEFAULT 0,
+        assist INTEGER DEFAULT 0,
+        pim INTEGER DEFAULT 0,
         position TEXT,
-        saves INTEGER,
-        mip FLOAT,
-        ga INTEGER,
-        shots INTEGER,
-        wins INTEGER, 
-        sog INTEGER,
-        loss INTEGER,
-        tie INTEGER,
-        points INTEGER,
-        FOREIGN KEY (team_name)            
+        saves INTEGER DEFAULT 0,
+        mip FLOAT DEFAULT 0,
+        ga INTEGER DEFAULT 0,
+        sa INTEGER DEFAULT 0,
+        team_name TEXT DEFAULT  "{}",         
+        FOREIGN KEY (team_name) REFERENCES KIHF(team_name)             
     )
-'''.format(team_a_name))
-
+'''.format(team_a_name, team_a_name))
+conn.commit()
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS "{}" (
-        goals INTEGER ,
-        assists INTEGER,
-        pim INTEGER,
         player_name TEXT,
+        number INTEGER UNIQUE,
+        goal INTEGER DEFAULT 0,
+        assist INTEGER DEFAULT 0,
+        pim INTEGER DEFAULT 0,
         position TEXT,
-        saves INTEGER,
-        mip FLOAT,
-        ga INTEGER,
-        shots INTEGER,
-        wins INTEGER, 
-        sog INTEGER,
-        loss INTEGER,
-        tie INTEGER,    
-        FOREIGN KEY (team_name)        
+        saves INTEGER DEFAULT 0,
+        mip FLOAT DEFAULT 0,
+        ga INTEGER DEFAULT 0,
+        sa INTEGER DEFAULT 0,
+        team_name TEXT DEFAULT  "{}",     
+        FOREIGN KEY (team_name) REFERENCES KIHF(team_name)         
     )
-'''.format(team_b_name))
+'''.format(team_b_name, team_b_name))
+conn.commit()
 ##########################################################################################################################################################################
 ''''''
 #Adding Players to tables 
@@ -142,6 +136,12 @@ for y in range(len(team_a_roster) ):
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_a_name ,player_name,position,))
+        #adds players to their team tables if they havent been added before. This is more for automation because I dont want to make the tables manually
+        cursor.execute('''
+                        INSERT OR IGNORE INTO  "{}"  (number, team_name, player_name, position)
+                        VALUES (?,?,?,?)
+                        
+                    '''.format(team_a_name), (player,team_a_name ,player_name,position,))
         conn.commit()
         print(player, player_name,position)
 
@@ -168,6 +168,12 @@ for y in range(len(team_a_roster) ):
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_a_name ,player_name,position,))
+            #adds players to their team tables if they havent been added before. This is more for automation because I dont want to make the tables manually
+            cursor.execute('''
+                        INSERT OR IGNORE INTO  "{}"  (number, team_name, player_name, position)
+                        VALUES (?,?,?,?)
+                        
+                    '''.format(team_a_name), (player,team_a_name ,player_name,position,))
             conn.commit()
         except Exception as e:
             print(e)
@@ -187,7 +193,7 @@ team_b_ga = list_df[8].dropna()
 print("ga", team_b_ga)
 team_b_roster = list_df[9]
 
-#adds players on the scoresheet to the database
+#adds players on the scoresheet to the game table and team table
 print(list_df[9].iat[0, 1]) 
 for y in range(len(team_b_roster) ):
     if pd.isna(list_df[9].iat[0, 1]) or list_df[2].iat[0, 1] in ["(C)", "(A)"]:
@@ -203,6 +209,11 @@ for y in range(len(team_b_roster) ):
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_b_name ,player_name,position,))
+        cursor.execute('''
+                        INSERT OR IGNORE INTO  "{}"  (number, team_name, player_name, position)
+                        VALUES (?,?,?,?)
+                        
+                    '''.format(team_b_name), (player,team_b_name ,player_name,position,))
         conn.commit()
         print("BREEEEEE",player, player_name,position)
     else:    
@@ -226,6 +237,12 @@ for y in range(len(team_b_roster) ):
                         VALUES (?,?,0,0,0,?,?)
                         
                     '''.format(game_no), (player,team_b_name,player_name,position,))
+            #adds players to their team tables if they havent been added before. This is more for automation because I dont want to make the tables manually
+            cursor.execute('''
+                        INSERT OR IGNORE INTO  "{}"  (number, team_name,goal, player_name, position)
+                        VALUES (?,?,0,?,?)
+                        
+                    '''.format(team_b_name), (player,team_b_name ,player_name,position,))
             conn.commit()
         except Exception as e:
             print(e)
@@ -233,24 +250,29 @@ for y in range(len(team_b_roster) ):
 
 
 ########################################################################################################################################################
-  
-print(team_a_ga.iat[1, 2])
+#adding assists and goals to the tables   
 for x in range(1, len(team_a_ga)):
     
     
     try:
         
-
-    
+        print(team_a_ga.iat[x, 1])
+        #goal
         cursor.execute('''
                 UPDATE "{}" 
                 SET goal = goal + 1
                 WHERE number = ? AND team_name = ?
             '''.format(game_no), (team_a_ga.iat[x, 1],team_a_name,))
         conn.commit()
-
-
-
+        #goal into team table
+        cursor.execute('''
+                UPDATE "{}" 
+                SET goal = goal + 1
+                WHERE number = ? 
+            '''.format(team_a_name), (team_a_ga.iat[x, 1],))
+        conn.commit()
+        # These are in the same try block because if there is only 1 assist the next execute will fail and just continue but the first was already commited so its fine.
+        #assist 1 
         try:
             
             
@@ -260,16 +282,26 @@ for x in range(1, len(team_a_ga)):
                 WHERE number = ? AND team_name = ?
             '''.format(game_no), (team_a_ga.iat[x, 2],team_a_name,))
             conn.commit()
-
+            cursor.execute('''
+                UPDATE "{}" 
+                SET assist = assist + 1
+                WHERE number = ? 
+            '''.format(team_a_name), (team_a_ga.iat[x, 2],))
+            conn.commit()
             
-            
+            #assist 2
             cursor.execute('''
                 UPDATE "{}" 
                 SET assist = assist + 1
                 WHERE number = ? AND team_name = ?
             '''.format(game_no), (team_a_ga.iat[x, 3],team_a_name,))
             conn.commit()
-
+            cursor.execute('''
+                UPDATE "{}" 
+                SET assist = assist + 1
+                WHERE number = ? 
+            '''.format(team_a_name), (team_a_ga.iat[x, 3],))
+            conn.commit()    
 
 
 
@@ -282,8 +314,7 @@ for x in range(1, len(team_a_ga)):
 
 
 
-   
-##above needs to be done below for team b it seems. 
+#below is same as above but for team B
 
 team_b_name = list_df[10].columns[1]
 team_b_ga = list_df[8].dropna()
@@ -299,7 +330,12 @@ for x in range(1,len(team_b_ga)):
                 WHERE number = ? AND team_name = ?
             '''.format(game_no), (team_b_ga.iat[x, 1],team_b_name,))
         conn.commit()
-
+        cursor.execute('''
+                UPDATE "{}" 
+                SET goal = goal + 1
+                WHERE number = ? 
+            '''.format(team_b_name), (team_b_ga.iat[x, 1],))
+        conn.commit()
 
 
         try:
@@ -311,7 +347,12 @@ for x in range(1,len(team_b_ga)):
                 WHERE number = ? AND team_name = ?
             '''.format(game_no), (team_b_ga.iat[x, 2],team_b_name,))
             conn.commit()
-
+            cursor.execute('''
+                UPDATE "{}" 
+                SET assist = assist + 1
+                WHERE number = ? 
+            '''.format(team_b_name), (team_b_ga.iat[x, 2],))
+            conn.commit()
             
             
             cursor.execute('''
@@ -320,7 +361,12 @@ for x in range(1,len(team_b_ga)):
                 WHERE number = ? AND team_name = ?
             '''.format(game_no), (team_b_ga.iat[x, 3],team_b_name,))
             conn.commit()
-
+            cursor.execute('''
+                UPDATE "{}" 
+                SET assist = assist + 1
+                WHERE number = ? 
+            '''.format(team_b_name), (team_b_ga.iat[x, 3],))
+            conn.commit()
 
 
 
@@ -342,7 +388,6 @@ for x in range(1,len(team_b_ga)):
 
 ########################################################################################################################################################
 #GOALIE STATS SECTION
-# needs to get to database
 
 # this function cleans data for cells with A:B, for some reason tabula breaks it and has extra whitespace characters in there
 def clean_data(cell):
@@ -375,7 +420,9 @@ gka1_number = int(list_df[12].iat[0, 0])
 gka1_mip,y = list_df[12].iat[0, 1].split(":")
 gka1_ga = int(list_df[12].iat[0, 2])
 gka1_mip = int(gka1_mip)
-#add GKA1 stats to table
+gka1_sa = gka1_saves + gka1_ga
+print("SA", gka1_sa)
+#add GKA1 stats to game table
 cursor.execute('''
     UPDATE "{}"
     SET saves = ?,
@@ -383,9 +430,21 @@ cursor.execute('''
         ga = ?
     WHERE number = ? AND team_name = ?
 '''.format(game_no), (gka1_saves, gka1_mip, gka1_ga, gka1_number, team_a_name))
-
 conn.commit()
-  
+
+#adds to team table
+cursor.execute('''
+    UPDATE "{}"
+    SET saves = saves + ?,
+        mip = mip +  ?,
+        ga = ga + ?,
+        sa = sa + ?
+    WHERE number = ? 
+'''.format(team_a_name), (gka1_saves, gka1_mip, gka1_ga,gka1_sa,gka1_number))
+conn.commit()  
+
+
+
 
 try:
 #GKA2 wrapped in try block becuase there isn't always a second goalie
@@ -396,7 +455,8 @@ try:
     gka2_mip,y = list_df[12].iat[1, 1].split(":")
     gka2_ga = int(list_df[12].iat[1, 2])
     gka2_mip = int(gka2_mip)
-    print(gka2_number, " " ,gka2_mip , gka2_saves )
+    gka2_sa = gka2_saves + gka2_ga
+    #print(gka2_number, " " ,gka2_mip , gka2_saves )
     cursor.execute('''
         UPDATE "{}"
         SET saves = ?,
@@ -404,6 +464,15 @@ try:
             ga = ?
         WHERE number = ? AND team_name = ?
     '''.format(game_no), (gka2_saves, gka2_mip, gka2_ga, gka2_number, team_a_name))
+    cursor.execute('''
+    UPDATE "{}"
+    SET saves = saves + ?,
+        mip = mip +  ?,
+        ga = ga + ?,
+        sa = sa + ?
+    WHERE number = ? 
+'''.format(team_a_name), (gka2_saves, gka2_mip, gka2_ga,gka2_sa,gka2_number))
+
 except Exception as e:
     pass
 
@@ -413,6 +482,7 @@ gkb1_number = int(list_df[12].iat[0, 3])
 gkb1_mip,y = list_df[12].iat[0, 4].split(":")
 gkb1_ga = int(list_df[12].iat[0, 5])
 gkb1_mip = int(gkb1_mip)
+gkb1_sa = gkb1_saves + gkb1_ga
 
 cursor.execute('''
     UPDATE "{}"
@@ -421,8 +491,17 @@ cursor.execute('''
         ga = ?
     WHERE number = ? AND team_name = ?
     '''.format(game_no), (gkb1_saves, gkb1_mip, gkb1_ga, gkb1_number,team_b_name, ))
-
 conn.commit()
+#adds to team table
+cursor.execute('''
+    UPDATE "{}"
+    SET saves = saves + ?,
+        mip = mip +  ?,
+        ga = ga + ?,
+        sa = sa + ?
+    WHERE number = ? 
+'''.format(team_b_name), (gkb1_saves, gkb1_mip, gkb1_ga,gkb1_sa,gkb1_number))
+conn.commit()  
 
 
 
@@ -437,6 +516,7 @@ try:
     gkb2_mip,y = list_df[12].iat[1, 4].split(":")
     gkb2_ga = int(list_df[12].iat[1, 5])
     gkb2_mip = int(gkb2_mip)
+    gkb2_sa = gkb2_saves + gkb2_ga
 
 
     cursor.execute('''
@@ -446,6 +526,17 @@ try:
             ga = ?
         WHERE number = ? AND team_name = ?
     '''.format(game_no), (gkb2_saves, gkb2_mip, gkb2_ga, gkb2_number, team_b_name,))
+    cursor.execute('''
+    UPDATE "{}"
+    SET saves = saves + ?,
+        mip = mip +  ?,
+        ga = ga + ?,
+        sa = sa + ?
+    WHERE number = ? 
+    '''.format(team_b_name), (gkb2_saves, gkb2_mip, gkb2_ga,gkb2_sa,gkb2_number))
+    conn.commit()      
+
+    
 except Exception as e:
     print(e)
 
@@ -458,6 +549,7 @@ except Exception as e:
 
 ######################################################################################
 #penalties section
+#team A    
 for x in range(1, len(list_df[5].dropna())):
     if str(list_df[5].dropna().iat[x, 1]).startswith("T"):
            #add to team PIM not to player here todo
@@ -473,9 +565,15 @@ for x in range(1, len(list_df[5].dropna())):
         WHERE number = ?  AND team_name = ?
     '''.format(game_no, pen_time), (pen_player,team_a_name,))
         conn.commit()
+        cursor.execute('''
+        UPDATE "{}"
+        SET pim = pim + {}
+        WHERE number = ?  
+    '''.format(team_a_name, pen_time), (pen_player,))
+        conn.commit()
     
 #Where there is a bench minor the number with start with T, sould be just added to team PIM 
-
+#team B
 for x in range(len(list_df[6].dropna())):
     if str(list_df[6].dropna().iat[x, 1]).startswith("T"):
            #add to team PIM not to player here todo
@@ -491,18 +589,30 @@ for x in range(len(list_df[6].dropna())):
         WHERE number = ?  AND team_name = ?
     '''.format(game_no, pen_time), (pen_player, team_b_name,))
         conn.commit()
+        cursor.execute('''
+        UPDATE "{}"
+        SET pim = pim + {}
+        WHERE number = ? 
+    '''.format(team_b_name, pen_time), (pen_player,))
+        conn.commit()
+        
 ######################################################################################    
+#KIHF table update section 
+       
+
+
+
+
+#next will be the KIHF table (PIM will need to be added here for bench minors, still todo in penalties section)
+#finally goalie table 
+        
+#need SOG for team (saves + ga =)
+        
+
+
+
     
 
-
-#todo update team stats in KIHF and player stats in team table, player stats table will need to be called at thte start where tables are being created. need goalies table.
-
-
-
-
-    
-
-###############################below is updating team stats############################################
 
     
 
