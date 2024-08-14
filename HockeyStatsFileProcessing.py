@@ -4,7 +4,7 @@ import tabula
 import pandas as pd
 import re
 import logging
-import traceback
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,24 +15,35 @@ logging.basicConfig(
     ]
 )
 #connects to database
-conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\test.db')
+conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\test3.db')
 cursor = conn.cursor()
-conn2 = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\KIHF2.db')
+conn2 = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\KIHF4.db')
 cursor2 = conn2.cursor()
 
-
-cursor2.execute("SELECT * FROM games")
-myresult = cursor2.fetchall()
-
-gameidlist = []
-for i in myresult:
+#selects all game ids from Main python program that have pdfs 
+cursor2.execute("SELECT * FROM game_ids")
+result = cursor2.fetchall()
+game_id_list = []
+for i in result:
     x= i[0] 
-    gameidlist.append(x)
+    game_id_list.append(x)
+
+#first time running it will break so wrapped in try
+try:
+    #finds what games are already in the database so they aren't added again
+    cursor.execute("SELECT name FROM sqlite_master where type = 'table' AND name GLOB  '[1-5]*'  ")
+    result = cursor.fetchall()
+    games_list = []
+    for i in result:
+        x = i[0]
+        games_list.append(x)
 
 
+    game_id_list= list(set(game_id_list)-set(games_list)) 
+except:
+    pass
 
 
- 
 #creates League database
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS "KIHF" (
@@ -51,8 +62,8 @@ cursor.execute('''
 conn.commit()
 
 
-list2=[1]
-for game_id in gameidlist:
+
+for game_id in game_id_list:
     try:
         #this needs to be looped
         list_df = tabula.read_pdf_with_template(
@@ -92,9 +103,17 @@ for game_id in gameidlist:
         '''.format(game_no))
 
         conn.commit()
-
-        team_a_name = list_df[1].columns[1]
-        team_b_name = list_df[10].columns[1]
+        #remove if condtionals until line 105, only there for fixing edgecase DB stuff
+        if game_id == "3-18":
+            team_a_name= "YOKOHAMA BAY BLUES"
+        else:
+            team_a_name = list_df[1].columns[1]
+        if game_id == "1-25":
+            team_b_name = "神奈川メープルリーフ A" 
+        elif game_id == "1-26":
+            team_b_name = "富士通 RED BULLETS"
+        else:
+            team_b_name = list_df[10].columns[1]
         cursor.execute('''
             INSERT OR IGNORE INTO KIHF (division,team_name)
             VALUES (?,?)
@@ -163,6 +182,7 @@ for game_id in gameidlist:
                     player = player.replace("V", '',).replace("T", '',1).replace("F", '',1).strip()
                     
                     player, player_name = player.split(" ",1) 
+                    player_name = player_name.strip()
                     position = team_a_roster.iat[y, 2]
                     #sometimes tabula mistakes D for 0
                     if position == "0" or 0 : 
@@ -200,6 +220,7 @@ for game_id in gameidlist:
                     player_name = player_name.replace("(C)", '').strip()
                     player_name = player_name.replace("T", '').strip()
                     player_name = player_name.replace("(A)", '').strip()
+                    player_name = player_name.strip()
                     print("NAME A",player_name)
                     cursor.execute('''
                                 INSERT INTO "{}"  (number, team_name, goal, assist, pim, player_name, position)
@@ -238,6 +259,7 @@ for game_id in gameidlist:
                 player = list_df[9].iat[y, 0]
                 player = player.replace("V", '',).replace("T", '',1).replace("F", '',1).strip()
                 player, player_name = player.split(" ",1) 
+                player_name = player_name.strip()
                 position = team_b_roster.iat[y, 2]
                 #sometimes tabula mistakes D for 0
                 if position == "0" or 0 : 
@@ -269,6 +291,7 @@ for game_id in gameidlist:
                     player_name = player_name.replace("T", '').strip()
                     player_name = player_name.replace("(C)", '').strip()
                     player_name = player_name.replace("(A)", '').strip()
+                    player_name = player_name.strip()
                     print("BREEEEEE",player," ", player_name," ",position)
                     cursor.execute('''
                                 INSERT INTO "{}"  (number, team_name, goal, assist, pim, player_name, position)
@@ -537,12 +560,20 @@ for game_id in gameidlist:
         try:
             gkb1_mip,y = list_df[12].iat[0, 4].split(":")
         except:
-            gkb1_mip,y = list_df[12].iat[0, 5].split(":")
+            #this needs to be taken out
+            try:
+                gkb1_mip,y = list_df[12].iat[0, 5].split(":")
+            except:
+                gkb1_mip = 45
         try:
 
             gkb1_ga = int(list_df[12].iat[0, 5])
         except:
-             gkb1_ga = int(list_df[12].iat[0, 6])   
+             #this needs to be taken out
+             try:
+                gkb1_ga = int(list_df[12].iat[0, 6])   
+             except:
+                 gkb1_ga = 9
         gkb1_mip = int(gkb1_mip)
         gkb1_sa = gkb1_saves + gkb1_ga
 
@@ -755,3 +786,5 @@ for game_id in gameidlist:
 
 #fixed above
 #running this doesn't work on base system have to use conda enviorment for some reason. Works but puts ?? for japanese
+# English names with V or T get stripped...didnt really consider that 
+#potential fix for goalies or people who change number is to allow an update 

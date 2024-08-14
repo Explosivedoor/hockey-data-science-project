@@ -1,18 +1,16 @@
-import socket
+
 from tkinter import EXCEPTION   
 import urllib.request, urllib.parse, urllib.error
 from bs4 import BeautifulSoup
 import re
-import shutil
 import wget
 import tabula
 import csv
-import codecs
-import pandas
+import pandas as pd
 import sqlite3
 
 # makes connection to database, and makes the table if it isn't there yet (though realisticlly that part isnt needed)
-conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\KIHF.db')
+conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\KIHF4.db')
 cursor = conn.cursor()
 
 cursor.execute('''
@@ -40,7 +38,7 @@ with open(csv_file_path, 'r', encoding='utf-8') as file:
 #print(data)
 
 #beautifulsoup setup
-url = 'http://kihf.net/detail.php?c=772'
+url = 'http://192.168.1.8:32794/'
 html = urllib.request.urlopen(url).read()
 soup= BeautifulSoup(html,'html.parser')
 
@@ -54,7 +52,6 @@ for td in tablerow:
 
 #finds all table rows in table 6, which is the table on the page we need. 
 trww = tables[6].find_all('tr')
-print(trww[2])
 
 
 
@@ -68,6 +65,7 @@ for index, x in enumerate(trww,):
     x = x.find_all('td')
     
     #checks if first row is date or not by checking if it is a date and if it is a leauge game by checking for the formating x-y
+    #try block is for when the game isn't over
     try:
         if pattern.match(x[0].text.strip()) and pattern2.match(x[4].text.strip()):
             
@@ -180,8 +178,8 @@ with open(csv_file_path, 'w', newline='', encoding='utf-8') as file:
 conn.close()
 
 #################################################################################################################
-#now to get the game stats and program in forfit condition 
-conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\KIHF2.db')
+#now to get the game stats and program in forfit condition
+conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\KIHF4.db')
 cursor = conn.cursor()
 list2 = []
 list3 = []
@@ -195,8 +193,23 @@ for tag in tags:
      print(link)
      list2.append(str(link))
      print(tag.get('href',None))
+     
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS game_ids (
+        id TEXT PRIMARY KEY    )
+''')
+conn.commit()
+
+cursor.execute("SELECT * FROM game_ids")
+game_ids = cursor.fetchall()
+game_ids_list =[]
+for i in game_ids:
+    x= i[0] 
+    game_ids_list.append(x)
 
 
+
+print("GAME IDS:", game_ids_list)
 #it makes the list of all of the links     
 for x in list2:
     list3.append(x.replace("[","").replace("]","").replace("'",""))
@@ -204,49 +217,71 @@ list3 = ' '.join(list3)
 list3 = list(list3.split())
 print(list3)
 
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS games (
-        game TEXT PRIMARY KEY    )
-''')
-conn.commit()
 
+
+cursor.execute("SELECT * FROM game_ids")
+myresult = cursor.fetchall()
 
 
 for link in list3:
-      
+    
     filename = re.findall('[1-5].+',link)
     databasename = re.findall('[1-5]-[0-9]+',link)
     
     filename = filename[0] if filename else ""
     databasename = databasename[0] if databasename else ""
-    print( "file name" , str(filename))
-    print("database name" , databasename)
-    
-    cursor.execute("SELECT * FROM games")
-    myresult = cursor.fetchall()
-    print(myresult)
-    
-    sql = "INSERT OR IGNORE INTO games (game) VALUES (?)"
-    val = (databasename,)   
-    try:
-        #this tries to commit the game number to the table, if it exsists it will throw an exception, 
-        #then it will loop again, if no exception it will download.
-        cursor.execute(sql, val)
-        conn.commit()
-    #this is the conversion function
-        print('working')
-        print(databasename)
-        wget.download(link, 'D:\\Downloads\\Hockey\\' ) 
-        df = tabula.read_pdf_with_template( input_path='D:\\Downloads\\Hockey\\'+ str(databasename).replace("[","").replace("]","").replace("'","")+'.pdf', template_path= "D:\\Downloads\\Hockey\\KIHF-6-selc.json",  pages='all', encoding='ISO-8859-1')[0]
-        #print(df)
-        tabula.convert_into('D:\\Downloads\\Hockey\\'+ str(databasename)+(".pdf"), 'D:\\Downloads\\Hockey\\'+str(databasename).replace("[","").replace("]","").replace("'","")+ ".csv", output_format="csv", pages='all')    
-#download function
-    except sqlite3.IntegrityError:
-        continue
-    #else:
+    #this checks if it has already been downloaded
+    if databasename not in game_ids_list:
+        print( "file name" , str(filename))
+        print("database name" , databasename)
         
+        
+        
+        sql = "INSERT OR IGNORE INTO game_ids (id) VALUES (?)"
+        
+        val = (databasename,)   
+        try:
+            #this tries to commit the game number to the table, if it exsists it will throw an exception, 
+            #then it will loop again, if no exception it will download.
+            cursor.execute(sql, val)
+            conn.commit()
+        #this is the conversion function from PDF to text
+            print('working')
+            print(databasename)
+            print(link)
+            wget.download(link, 'D:\\Downloads\\Hockey\\' ) 
+
+            
+        #  list_df = tabula.read_pdf_with_template(
+        #   input_path='D:\\Downloads\\Hockey\\'+ str(databasename).replace("[","").replace("]","").replace("'","")+'.pdf',
+        #  template_path="D:\\Downloads\\Hockey\\template6.json",
+        #   pages='all',encoding='cp1252'        
+        # )
+            
+            #PASTE CODE HERE AFTER FIXING#######################################        
+
+        
+    
+
+        #print("THIS IS IT", list_df[1].columns[1])
+        #df = tabula.read_pdf_with_template( input_path='D:\\Downloads\\Hockey\\'+ str(databasename).replace("["","").replace("]","").replace("'","")+'.pdf', template_path= "D:\\Downloads\\Hockey\\KIHF-6-selc.json",  pages='all', encoding='ISO-8859-1')[0]
+        #print(df)
+        #tabula.convert_into('D:\\Downloads\\Hockey\\'+ str(databasename)+(".pdf"), 'D:\\Downloads\\Hockey\\'+str(databasename).replace("[","").replace("]","").replace("'","")+ ".csv", output_format="csv", pages='all')    
+#download function
+        except sqlite3.IntegrityError:
+            continue
+    #else:
+    else:
+        pass    
 
 
 
         #downloading and conversion working above up to line 248
         #not working is getting the marker for index for edge cases. Maybe just dont bother and write a log for edge casess 
+    
+
+
+
+
+#ughhhhhhhhhhhhhhhhh need to add the forfite condition to update KIHF table with win loss. That will be annowing. 
+#todo add check using dic and game code to skip  
