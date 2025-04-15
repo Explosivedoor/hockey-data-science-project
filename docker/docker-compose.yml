@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "32932:80"
+      - "32921:443"
+    volumes:
+      - ./default.css:/usr/share/nginx/html/default.css
+      - ./index.html:/usr/share/nginx/html/index.html
+      - ./files:/usr/share/nginx/html/files
+    restart: unless-stopped
