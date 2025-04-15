@@ -28,13 +28,8 @@ cursor.execute('''
 #date format checking and game code checking for if statement below 
 pattern = re.compile(r'^\d+/\d+$') #match strings like 12/23
 pattern2 = re.compile(r'^\d+-\d+$') #match streings like 12-24
-#opens and allows writing to CSV
-csv_file_path = 'D:\\Downloads\\events-sample (1).csv' 
-with open(csv_file_path, 'r', encoding='utf-8') as file:
-    reader = csv.reader(file)
-    data = list(reader)
 
-#print(data)
+
 
 ##beautifulsoup setup##
 #This is the docker webpage url because i don't want to constantly hit the real site when testing
