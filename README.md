@@ -6,7 +6,7 @@ To start off the data extraction for the pdfs using tabula was very inconsistant
 For example, for two tables that should be the same, one table would start the data at row 0 and the other at row 1. Another example about those specific tables is the numbers in one were intergers and floats in the other. 
 
 #To run this app. 
-1. Download the docker folder, from inside of it run ```docker-compose up -d``` the ip of the website will be http://localhost:32932
+1. Run ```sudo docker run -p 32932:80 -d explosivedoor/hockey-stats-website``` the ip of the website will be http://localhost:32932
 2. Now download the rest and run HockeyStatsFilesDownload.py
 3. Then run HockeyStatsFileProcessing.py (these will be combined in the future.)
 4. Finally ```streamlit run HockeyStatsFrontend.py```  
