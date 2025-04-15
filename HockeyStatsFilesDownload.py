@@ -38,7 +38,7 @@ with open(csv_file_path, 'r', encoding='utf-8') as file:
 
 ##beautifulsoup setup##
 #This is the docker webpage url because i don't want to constantly hit the real site when testing
-url = 'http://192.168.1.8:32932/'
+url = 'http://localhost:32932/'
 html = urllib.request.urlopen(url).read()
 soup= BeautifulSoup(html,'html.parser')
 
