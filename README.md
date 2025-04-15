@@ -5,7 +5,13 @@
 To start off the data extraction for the pdfs using tabula was very inconsistant, resulting in a LOT of extra code, and non-reusable code, to combat the edge cases and different formating. 
 For example, for two tables that should be the same, one table would start the data at row 0 and the other at row 1. Another example about those specific tables is the numbers in one were intergers and floats in the other. 
 
-## The ability to run this app on your own will come later. 
+#To run this app. 
+1. Download the docker folder, from inside of it run ```docker-compose up -d``` the ip of the website will be http://localhost:32932
+2. Now download the rest and run HockeyStatsFilesDownload.py
+3. Then run HockeyStatsFileProcessing.py (these will be combined in the future.)
+4. Finally ```streamlit run HockeyStatsFrontend.py```  
+
+I am aware this is a bad way to do it. I am working on consolidating them so you only have to run the frontend file. 
 
 # Function of the project 
 This project is pretty complex (for me at least) in the future I will illusrate below to give a better understanding. For now though, I will explain in the best way I can. This project first scrapes a website for information about a hockey leauge's schedule and current game results. It takes that information and writes into a CSV with proper formating, to upload on to a second site, which uses SportsPress (in the future this will hopfully be updated to use a REST api to update SportsPress). The next part of the program finds all links to completed games' scoresheets in PDF format and downloads them. It checks to see if they have already been downloaded, skips those that have. The data from those PDF scoresheets are then extracted using tabula into dataframes. These dataframes are manipulated to extract the stats for each game (eg. Goals, Assits, Roster, etc.). The manipulated data is also placed into a SQlite database, with each game being its own table in the database. Finally (and still currently a work in progress) the database will be used to update SportsPress with the statistics. 
