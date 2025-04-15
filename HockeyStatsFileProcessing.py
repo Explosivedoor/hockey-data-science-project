@@ -15,14 +15,13 @@ logging.basicConfig(
     ]
 )
 #connects to database
-conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\test3.db')
+
+conn = sqlite3.connect('./KIHF.db')
 cursor = conn.cursor()
-conn2 = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\KIHF4.db')
-cursor2 = conn2.cursor()
 
 #selects all game ids from Main python program that have pdfs 
-cursor2.execute("SELECT * FROM game_ids")
-result = cursor2.fetchall()
+cursor.execute("SELECT * FROM game_ids")
+result = cursor.fetchall()
 game_id_list = []
 for i in result:
     x= i[0] 
@@ -67,8 +66,8 @@ for game_id in game_id_list:
     try:
         #this needs to be looped
         list_df = tabula.read_pdf_with_template(
-            input_path=f'D:\\Downloads\\Hockey\\{game_id}.pdf',
-            template_path="D:\\Downloads\\Hockey\\template8.json",
+            input_path=f'./game_files/{game_id}.pdf',
+            template_path="./template8.json",
             pages='all',        
         )
 
@@ -103,7 +102,7 @@ for game_id in game_id_list:
         '''.format(game_no))
 
         conn.commit()
-        #remove if condtionals until line 105, only there for fixing edgecase DB stuff
+        #remove if condtionals until line 115, only there for fixing edgecase DB stuff
         if game_id == "3-18":
             team_a_name= "YOKOHAMA BAY BLUES"
         else:
@@ -124,7 +123,7 @@ for game_id in game_id_list:
             VALUES (?,?)
         ''',(div,team_b_name,))
         conn.commit()
-        print(team_a_name)
+       # print(team_a_name)
         #adding team tables 
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS "{}" (     
@@ -165,8 +164,8 @@ for game_id in game_id_list:
         ##########################################################################################################################################################################
         ''''''
         #Adding Players to tables 
-        print("HERE", team_a_name)
-        print(pd.isna(list_df[2].iat[0, 1]))
+       # print("HERE", team_a_name)
+       # print(pd.isna(list_df[2].iat[0, 1]))
         #goals and assists, drops empty rows for processing
         team_a_ga = list_df[3].dropna()
         team_a_roster = list_df[2]
@@ -179,7 +178,7 @@ for game_id in game_id_list:
                 try:
                     player = list_df[2].iat[y, 0]
                     print("BREAKS HERE:", player)
-                    player = player.replace("V", '',).replace("T", '',1).replace("F", '',1).strip()
+                    player = player.replace("V ", '',1).replace("T ", '',1).replace("F ", '',1).strip()
                     
                     player, player_name = player.split(" ",1) 
                     player_name = player_name.strip()
@@ -199,7 +198,7 @@ for game_id in game_id_list:
                                     
                                 '''.format(team_a_name), (player,team_a_name ,player_name,position,))
                     conn.commit()
-                    print(player, player_name,position)
+                    #print(player, player_name,position)
                 except:
                     continue
 
@@ -214,14 +213,14 @@ for game_id in game_id_list:
                     if position == "0" or 0 : 
                         position = 'D'
                     player = int(player)
-                    print("PssssNAME", player_name)
+                    #print("PssssNAME", player_name)
                     #replaces V (which is in there for some reason) and replaces it, strips out white space. Next  remove captian and assistant captian marks 
                     player_name = player_name.replace("V", '').strip()
                     player_name = player_name.replace("(C)", '').strip()
                     player_name = player_name.replace("T", '').strip()
                     player_name = player_name.replace("(A)", '').strip()
                     player_name = player_name.strip()
-                    print("NAME A",player_name)
+                    #print("NAME A",player_name)
                     cursor.execute('''
                                 INSERT INTO "{}"  (number, team_name, goal, assist, pim, player_name, position)
                                 VALUES (?,?,0,0,0,?,?)
@@ -257,7 +256,7 @@ for game_id in game_id_list:
         for y in range(len(team_b_roster) ):
             if pd.isna(list_df[9].iat[0, 1]) or list_df[2].iat[0, 1] in ["(C)", "(A)"]:
                 player = list_df[9].iat[y, 0]
-                player = player.replace("V", '',).replace("T", '',1).replace("F", '',1).strip()
+                player = player.replace("V ", '',).replace("T ", '',1).replace("F ", '',1).strip()
                 player, player_name = player.split(" ",1) 
                 player_name = player_name.strip()
                 position = team_b_roster.iat[y, 2]
@@ -287,8 +286,8 @@ for game_id in game_id_list:
                         position = 'D'
                     player = int(player)
                     #replaces V (which is in there for some reason) and replaces it, strips out white space. Next  remove captian and assistant captian marks 
-                    player_name = player_name.replace("V", '').strip()
-                    player_name = player_name.replace("T", '').strip()
+                    player_name = player_name.replace("V ", '').strip()
+                    player_name = player_name.replace("T ", '').strip()
                     player_name = player_name.replace("(C)", '').strip()
                     player_name = player_name.replace("(A)", '').strip()
                     player_name = player_name.strip()
@@ -786,5 +785,5 @@ for game_id in game_id_list:
 
 #fixed above
 #running this doesn't work on base system have to use conda enviorment for some reason. Works but puts ?? for japanese
-# English names with V or T get stripped...didnt really consider that 
+# 
 #potential fix for goalies or people who change number is to allow an update 

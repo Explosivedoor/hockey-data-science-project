@@ -1,16 +1,15 @@
 
 from tkinter import EXCEPTION   
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
 from bs4 import BeautifulSoup
 import re
 import wget
-import tabula
 import csv
-import pandas as pd
+
 import sqlite3
 
 # makes connection to database, and makes the table if it isn't there yet (though realisticlly that part isnt needed)
-conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\KIHF4.db')
+conn = sqlite3.connect('./KIHF.db')
 cursor = conn.cursor()
 
 cursor.execute('''
@@ -27,8 +26,8 @@ cursor.execute('''
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 #date format checking and game code checking for if statement below 
-pattern = re.compile(r'^\d+/\d+$')
-pattern2 = re.compile(r'^\d+-\d+$')
+pattern = re.compile(r'^\d+/\d+$') #match strings like 12/23
+pattern2 = re.compile(r'^\d+-\d+$') #match streings like 12-24
 #opens and allows writing to CSV
 csv_file_path = 'D:\\Downloads\\events-sample (1).csv' 
 with open(csv_file_path, 'r', encoding='utf-8') as file:
@@ -37,30 +36,26 @@ with open(csv_file_path, 'r', encoding='utf-8') as file:
 
 #print(data)
 
-#beautifulsoup setup
-url = 'http://192.168.1.8:32794/'
+##beautifulsoup setup##
+#This is the docker webpage url because i don't want to constantly hit the real site when testing
+url = 'http://192.168.1.8:32932/'
 html = urllib.request.urlopen(url).read()
 soup= BeautifulSoup(html,'html.parser')
 
 
-tablerow = soup.find_all('td',class_="xl789668")
 tables = soup('table')
 
-for td in tablerow:
-    inner_content = td.text.strip()  # Use strip() to remove leading and trailing whitespaces
-    #print(inner_content)
-
-#finds all table rows in table 6, which is the table on the page we need. 
-trww = tables[6].find_all('tr')
+#finds all table rows in 7th table , which is the table on the page we need. 
+tr = tables[6].find_all('tr')
 
 
 
-#todo add check using dic and game code 
+#TODO add check using dic and game code 
 
-tdw = trww[2].find_all('td')
+
 #enumerate function helps get index, which is used when there are two games on the same day this is because the date and time are on a different index for ONLY those instances.  
 
-for index, x in enumerate(trww,):
+for index, x in enumerate(tr,):
     print(f"Index {index}: {x}")
     x = x.find_all('td')
     
@@ -72,8 +67,8 @@ for index, x in enumerate(trww,):
             try:
                 print("Date and Time: ",  x[0].text.strip() + " " + x[1].text.strip()+ " "+ x[2].text.strip()+ " ")
                 #this strips the score eg 1-2 4-7
-                z = x[6].text.strip()
-                y,z = z.split('-')
+                score = x[6].text.strip()
+                team_a_score,team_b_score = score.split('-')
                 #adds two spaces 
                 data.append(' '+ ' ')
                 #date formating
@@ -94,11 +89,11 @@ for index, x in enumerate(trww,):
                 (  ) | (  ) | (      ) | Team B | B Score 
                 
                 """
-                data.append([t, x[2].text.strip(), x[3].text.strip(),x[5].text.strip(), y ])
-                data.append(['', '', '', x[7].text.strip(),z])
+                data.append([t, x[2].text.strip(), x[3].text.strip(),x[5].text.strip(), team_a_score ])
+                data.append(['', '', '', x[7].text.strip(),team_b_score])
 
                 game_data = [
-                    {'game_no': x[4].text.strip(), 'team_a': x[5].text.strip(), 'team_a_score': y, 'team_b': x[7].text.strip(), 'team_b_score': z, 'location': x[3].text.strip(), 'date': tdb},
+                    {'game_no': x[4].text.strip(), 'team_a': x[5].text.strip(), 'team_a_score': team_a_score, 'team_b': x[7].text.strip(), 'team_b_score': team_b_score, 'location': x[3].text.strip(), 'date': tdb},
                     
                     
                 ]
@@ -118,7 +113,7 @@ for index, x in enumerate(trww,):
         
         elif  pattern2.match(x[2].text.strip()): 
             #because of the way the table is you have to go back 1 index to get the correct date. This else condition is for when there are two games on the same date, as the table row index changes by 1, prob a more simple way to do this but eh. 
-            y = trww[index-1].find_all('td')
+            y = tr[index-1].find_all('td')
             q = y[1].text.strip()
             y = y[0].text.strip()
             
@@ -179,19 +174,20 @@ conn.close()
 
 #################################################################################################################
 #now to get the game stats and program in forfit condition
-conn = sqlite3.connect('C:\\Users\\Johnny\\source\\repos\\Hockey program v2\\Hockey program v2\\KIHF4.db')
+#TODO 
+conn = sqlite3.connect('./KIHF.db')
 cursor = conn.cursor()
-list2 = []
-list3 = []
+link_list = []
+formatted_link_list = []
 tags = soup('a')
 for tag in tags:
-     list1= tag.get('href',None)
-     print(list1)
-     #list1 = "http://kihf.net"+ list1
-     print(list1)
-     link = re.findall('\\S+/files/71ks/[1-5].+',list1)
-     print(link)
-     list2.append(str(link))
+     links= tag.get('href',None)
+     
+     
+     
+     link = re.findall('\\S+/files/71ks/[1-5].+',links)
+    
+     link_list.append(str(link))
      print(tag.get('href',None))
      
 cursor.execute('''
@@ -211,11 +207,11 @@ for i in game_ids:
 
 print("GAME IDS:", game_ids_list)
 #it makes the list of all of the links     
-for x in list2:
-    list3.append(x.replace("[","").replace("]","").replace("'",""))
-list3 = ' '.join(list3)
-list3 = list(list3.split())
-print(list3)
+for x in link_list:
+    formatted_link_list.append(x.replace("[","").replace("]","").replace("'",""))
+formatted_link_list = ' '.join(formatted_link_list)
+formatted_link_list = list(formatted_link_list.split())
+print(formatted_link_list)
 
 
 
@@ -223,13 +219,15 @@ cursor.execute("SELECT * FROM game_ids")
 myresult = cursor.fetchall()
 
 
-for link in list3:
+for link in formatted_link_list:
     
     filename = re.findall('[1-5].+',link)
     databasename = re.findall('[1-5]-[0-9]+',link)
     
     filename = filename[0] if filename else ""
+    
     databasename = databasename[0] if databasename else ""
+    
     #this checks if it has already been downloaded
     if databasename not in game_ids_list:
         print( "file name" , str(filename))
@@ -249,7 +247,7 @@ for link in list3:
             print('working')
             print(databasename)
             print(link)
-            wget.download(link, 'D:\\Downloads\\Hockey\\' ) 
+            wget.download(link, './game_files' ) 
 
             
         #  list_df = tabula.read_pdf_with_template(
@@ -284,4 +282,4 @@ for link in list3:
 
 
 #ughhhhhhhhhhhhhhhhh need to add the forfite condition to update KIHF table with win loss. That will be annowing. 
-#todo add check using dic and game code to skip  
+#TODO add check using dic and game code to skip  

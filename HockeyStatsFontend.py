@@ -4,21 +4,15 @@ import numpy as np
 import sqlite3
 import matplotlib.pyplot as plt
 from datetime import datetime
-st.write('''<style>
+import altair as alt
 
-[data-testid="column"] {
-    width: calc(33.3333% - 1rem) !important;
-    flex: 1 1 calc(33.3333% - 1rem) !important;
-    min-width: calc(33% - 1rem) !important;
-}
-</style>''', unsafe_allow_html=True)
-conn = sqlite3.connect("C:\\Users\\Johnny\\source\\repos\Hockey program v2\\Hockey program v2\\test.db")
-conn2 = sqlite3.connect("C:\\Users\\Johnny\\source\\repos\Hockey program v2\\Hockey program v2\\KIHF2.db")
+
+conn = sqlite3.connect("./KIHF.db")
 cursor = conn.cursor()
-cursor2 = conn2.cursor()
+
 st.title("KIHF Stats 2023-2024")
 st.caption("Stats may be inncorrect due to limitations of the ingest software (eg. number change during season)")
-tab1, tab2= st.tabs([ "Team Stats", "Game Scoresheet Look Up"])
+tab1, tab2, tab3= st.tabs([ "Team Stats", "Game Scoresheet Look Up", "Team Comparison"])
 with tab2:
     
     
@@ -34,7 +28,7 @@ with tab2:
         st.write(team)
         
         
-        df3 = pd.read_sql_query(f"SELECT * FROM game WHERE team_a = '{team}' OR  team_b = '{team}'", conn2)
+        df3 = pd.read_sql_query(f"SELECT * FROM game WHERE team_a = '{team}' OR  team_b = '{team}'", conn)
         st.write(df3)
         st.dataframe(df3.drop(["date", "location"], axis=1), hide_index = True)
         selected_game = st.selectbox("Select a Game",df3['game_no'])
@@ -94,7 +88,7 @@ with tab2:
         date=st.date_input("Look Up Game By Date",format="MM-DD-YYYY")
         
         date = str(int(date.month)) + "-" + str(int(date.day)) + "-" + str(int(date.year))
-        df3 = pd.read_sql_query(f"SELECT * FROM game WHERE date = '{date}'", conn2)
+        df3 = pd.read_sql_query(f"SELECT * FROM game WHERE date = '{date}'", conn)
 
 
         df3= df3.drop(["date"], axis=1)
@@ -189,14 +183,14 @@ with tab2:
 
         choice = df[df['Team Name'] == choice]
         team = choice.iloc[0,0]
-        df3 = pd.read_sql_query(f"SELECT * FROM game WHERE team_a = '{team}' OR  team_b = '{team}'", conn2)
+        df3 = pd.read_sql_query(f"SELECT * FROM game WHERE team_a = '{team}' OR  team_b = '{team}'", conn)
         game_outcomes = col2.toggle("See Games Played")
         if game_outcomes:
             st.write("Games Played")
             st.dataframe(df3)
 
         rank = ranked[team] 
-
+        goals = choice.iloc[0,1]
         wins = choice.iloc[0,2]
         losses = choice.iloc[0,3]
         ties = choice.iloc[0,4]
@@ -207,7 +201,7 @@ with tab2:
 
         st.header(f"#{rank} {team} ")
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
 
 
 
@@ -215,7 +209,8 @@ with tab2:
         col1.metric("Wins",wins) 
         col2.metric("Ties",ties) 
         col3.metric("Losses",losses) 
-        col1, col2, col3, col4 = st.columns(4)
+        
+        col4.metric("Goals",goals)
         col1.metric("Shots on Goal",sog) 
         col2.metric("Goals Agaisnt",ga) 
         col3.metric("Penalty Minutes",pim) 
@@ -322,3 +317,162 @@ with tab2:
 
     conn.close()
     """
+
+
+with tab3:
+        ###############################################################################################################################################
+        
+        col1, col2= st.columns(2)
+
+        team_a_div = col1.selectbox("Select Team A Division", (1,2,3,4,5))
+        team_b_div = col2.selectbox("Select Team B Division", (1,2,3,4,5))
+
+
+        team_a_df = pd.read_sql_query(f"SELECT * FROM KIHF WHERE division = {team_a_div}", conn)
+        team_b_df = pd.read_sql_query(f"SELECT * FROM KIHF WHERE division = {team_b_div}", conn)
+        
+        team_a_df = team_a_df.rename(columns={"team_name":"Team Name", "goal": "Goals", "assist":"Assists","wins":"Wins", "losses":"Losses","sog":"SOG","ga":"GA",'ties':'Ties',"pim":'PIM','sa':'SA' } )
+        team_a_df = team_a_df.drop(["division"], axis=1)
+        team_b_df = team_b_df.rename(columns={"team_name":"Team Name", "goal": "Goals", "assist":"Assists","wins":"Wins", "losses":"Losses","sog":"SOG","ga":"GA",'ties':'Ties',"pim":'PIM','sa':'SA' } )
+        team_b_df = team_b_df.drop(["division"], axis=1)
+
+
+        team_a_div_standings = col1.toggle("See Team A Division Standings")
+        if team_a_div_standings:
+            col1.write(f"Division {team_a_div} Standings")
+            col1.dataframe(team_a_df.sort_values('Wins', ascending=False), hide_index = True)
+        team_b_div_standings = col2.toggle("See Team B Division Standings")
+        if team_b_div_standings:
+            col2.write(f"Division {team_b_div} Standings")
+            col2.dataframe(team_b_df.sort_values('Wins', ascending=False), hide_index = True)
+
+       
+
+
+
+
+
+
+
+        team_a = col1.selectbox("Pick Team A",(team_a_df['Team Name']))
+        team_b = col2.selectbox("Pick Team B",(team_b_df['Team Name']))
+
+        team_a = team_a_df[team_a_df['Team Name'] == team_a]
+        team_b = team_b_df[team_b_df['Team Name'] == team_b]
+        
+
+        team_a_name = team_a.iloc[0,0]
+        team_b_name = team_b.iloc[0,0]
+
+
+
+        team_a_df = pd.read_sql_query(f"SELECT * FROM game WHERE team_a = '{team_a_name}' OR  team_b = '{team_a_name}'", conn)
+        team_b_df = pd.read_sql_query(f"SELECT * FROM game WHERE team_a = '{team_b_name}' OR  team_b = '{team_b_name}'", conn)
+
+        
+        team_a_goals = team_a.iloc[0,1]
+        team_a_wins = team_a.iloc[0,2]
+        team_a_losses = team_a.iloc[0,3]
+        team_a_ties = team_a.iloc[0,4]
+        team_a_sog = team_a.iloc[0,5]
+        team_a_ga = team_a.iloc[0,6]
+        team_a_pim = team_a.iloc[0,7]
+        team_a_sa = team_a.iloc[0,8]
+
+        team_b_goals = team_b.iloc[0,1]
+        team_b_wins = team_b.iloc[0,2]
+        team_b_losses = team_b.iloc[0,3]
+        team_b_ties = team_b.iloc[0,4]
+        team_b_sog = team_b.iloc[0,5]
+        team_b_ga = team_b.iloc[0,6]
+        team_b_pim = team_b.iloc[0,7]
+        team_b_sa = team_b.iloc[0,8]
+
+        
+
+        col1, col2 = st.columns(2)
+
+        col1.header(f"{team_a_name} ")
+        col2.header(f"{team_b_name} ")
+        col1, col2,col3,col4 = st.columns(4)
+
+
+        col1.metric("Wins",team_a_wins) 
+        col2.metric("Ties",team_a_ties) 
+        col1.metric("Losses",team_a_losses) 
+        col2.metric("Goals", team_a_goals)
+        col1.metric("Shots on Goal",team_a_sog) 
+        col2.metric("Goals Agaisnt",team_a_ga) 
+        col1.metric("Penalty Minutes",team_a_pim) 
+        col2.metric("Shots Agaisnt",team_a_sa) 
+
+        col3.metric("Wins",team_b_wins) 
+        col4.metric("Ties",team_b_ties) 
+        col3.metric("Losses",team_b_losses) 
+        col4.metric("Goals", team_b_goals)
+        col3.metric("Shots on Goal",team_b_sog) 
+        
+        col4.metric("Goals Agaisnt",team_b_ga) 
+        col3.metric("Penalty Minutes",team_b_pim) 
+        col4.metric("Shots Agaisnt",team_b_sa) 
+
+
+        
+
+        #circle plt
+        labels = ["team_a_wins", "team_b_wins",]
+        sizes = [team_a_wins, team_b_wins]
+        fig1, ax1 = plt.subplots()
+        ax1.pie(sizes, labels=labels, autopct='%1.1f%%',
+                shadow=True, startangle=90)
+        ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        row_height = 35  # Approximate height per row in pixels
+        height = min(500, row_height * len(df))  # Max height of 500 pixels
+        #st.pyplot(fig1)
+
+
+        tab1, tab2= st.tabs(["Win/Loss", "Shots/Goals"])
+        with tab1:
+            chart_data = pd.DataFrame({
+                "Team": [team_a_name, team_b_name],
+                "Wins": [team_a_wins,team_b_wins],
+                "Losses": [team_a_losses, team_b_losses],
+                "Ties": [team_a_ties, team_b_ties]
+            })
+
+            # Melt it so each row is one team-category pair
+            chart_data_melted = chart_data.melt(id_vars=["Team"], var_name="Category", value_name="Value")
+
+            # Then chart it the same way
+            chart = alt.Chart(chart_data_melted).mark_bar().encode(
+                x=alt.X("Category:N"),
+                y=alt.Y("Value:Q", stack="zero"),
+                color="Team:N"
+            )
+
+            st.altair_chart(chart, use_container_width=True)
+        with tab2:
+
+            chart_data = pd.DataFrame({
+                "Team": [team_a_name, team_b_name],
+                "Goals": [team_a_goals,team_b_goals],
+                "Goals Agaisnt": [team_a_losses, team_b_ga],
+                "Shots": [team_a_sog, team_b_sog],
+                "Shots Agaisnt": [team_a_sa, team_b_sa],
+            })
+
+            # Melt it so each row is one team-category pair
+            chart_data_melted = chart_data.melt(id_vars=["Team"], var_name="Category", value_name="Value")
+
+            # Then chart it the same way
+            chart = alt.Chart(chart_data_melted).mark_bar().encode(
+                x=alt.X("Category:N"),
+                y=alt.Y("Value:Q", stack="zero"),
+                color="Team:N"
+            )
+
+            st.altair_chart(chart, use_container_width=True)
+        
+        
+                
+            
